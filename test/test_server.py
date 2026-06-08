@@ -23,7 +23,7 @@ class TestServerInitialization(unittest.TestCase):
         mock_config = MagicMock()
         mock_config.ENUMERATORS_COLLECTION_NAME = "Enumerators"
         mock_config.VERSIONS_COLLECTION_NAME = "Versions"
-        mock_config.{{ (repo.name | upper | replace("-", "_")) }}_PORT = 8184
+        mock_config.CUSTOMER_API_PORT = 8184
         mock_get_config.return_value = mock_config
         
         mock_mongo_instance = MagicMock()
@@ -88,30 +88,72 @@ class TestAppConfiguration(unittest.TestCase):
         """Domain APIs must not register HTTP routes that mint credentials."""
         response = self.client.post(_FORBIDDEN_CREDENTIAL_ISSUER_PATH)
         self.assertEqual(response.status_code, 404)
-{% for item in service.data_domains.controls %}
-    def test_{{item | lower}}_routes_registered(self):
-        """Test that /api/{{item | lower}} routes are registered."""
-        response = self.client.get('/api/{{item | lower}}')
+
+    def test_subscription_routes_registered(self):
+        """Test that /api/subscription routes are registered."""
+        response = self.client.get('/api/subscription')
         # Should not get 404 (route exists), but may get 401 (auth required)
         self.assertIn(response.status_code, [200, 401, 500])
 
-{% endfor %}
-{% for item in service.data_domains.creates %}
-    def test_{{item | lower}}_routes_registered(self):
-        """Test that /api/{{item | lower}} routes are registered."""
-        response = self.client.get('/api/{{item | lower}}')
+
+    def test_dashboard_routes_registered(self):
+        """Test that /api/dashboard routes are registered."""
+        response = self.client.get('/api/dashboard')
         # Should not get 404 (route exists), but may get 401 (auth required)
         self.assertIn(response.status_code, [200, 401, 500])
 
-{% endfor %}
-{% for item in service.data_domains.consumes %}
-    def test_{{item | lower}}_routes_registered(self):
-        """Test that /api/{{item | lower}} routes are registered."""
-        response = self.client.get('/api/{{item | lower}}')
+
+    def test_card_routes_registered(self):
+        """Test that /api/card routes are registered."""
+        response = self.client.get('/api/card')
         # Should not get 404 (route exists), but may get 401 (auth required)
         self.assertIn(response.status_code, [200, 401, 500])
 
-{% endfor %}
+
+
+    def test_event_routes_registered(self):
+        """Test that /api/event routes are registered."""
+        response = self.client.get('/api/event')
+        # Should not get 404 (route exists), but may get 401 (auth required)
+        self.assertIn(response.status_code, [200, 401, 500])
+
+
+
+    def test_profile_routes_registered(self):
+        """Test that /api/profile routes are registered."""
+        response = self.client.get('/api/profile')
+        # Should not get 404 (route exists), but may get 401 (auth required)
+        self.assertIn(response.status_code, [200, 401, 500])
+
+
+    def test_customer_routes_registered(self):
+        """Test that /api/customer routes are registered."""
+        response = self.client.get('/api/customer')
+        # Should not get 404 (route exists), but may get 401 (auth required)
+        self.assertIn(response.status_code, [200, 401, 500])
+
+
+    def test_journey_routes_registered(self):
+        """Test that /api/journey routes are registered."""
+        response = self.client.get('/api/journey')
+        # Should not get 404 (route exists), but may get 401 (auth required)
+        self.assertIn(response.status_code, [200, 401, 500])
+
+
+    def test_rating_routes_registered(self):
+        """Test that /api/rating routes are registered."""
+        response = self.client.get('/api/rating')
+        # Should not get 404 (route exists), but may get 401 (auth required)
+        self.assertIn(response.status_code, [200, 401, 500])
+
+
+    def test_note_routes_registered(self):
+        """Test that /api/note routes are registered."""
+        response = self.client.get('/api/note')
+        # Should not get 404 (route exists), but may get 401 (auth required)
+        self.assertIn(response.status_code, [200, 401, 500])
+
+
     
     def test_metrics_route_registered(self):
         """Test that /metrics route is registered."""
@@ -124,15 +166,27 @@ class TestAppConfiguration(unittest.TestCase):
         blueprint_names = [bp.name for bp in self.app.blueprints.values()]
         
         # Check that our custom blueprints are registered
-{% for item in service.data_domains.controls %}
-        self.assertIn('{{item | lower}}_routes', blueprint_names)
-{% endfor %}
-{% for item in service.data_domains.creates %}
-        self.assertIn('{{item | lower}}_routes', blueprint_names)
-{% endfor %}
-{% for item in service.data_domains.consumes %}
-        self.assertIn('{{item | lower}}_routes', blueprint_names)
-{% endfor %}
+
+        self.assertIn('subscription_routes', blueprint_names)
+
+        self.assertIn('dashboard_routes', blueprint_names)
+
+        self.assertIn('card_routes', blueprint_names)
+
+
+        self.assertIn('event_routes', blueprint_names)
+
+
+        self.assertIn('profile_routes', blueprint_names)
+
+        self.assertIn('customer_routes', blueprint_names)
+
+        self.assertIn('journey_routes', blueprint_names)
+
+        self.assertIn('rating_routes', blueprint_names)
+
+        self.assertIn('note_routes', blueprint_names)
+
     
     def test_url_map_contains_expected_routes(self):
         """Test that URL map contains all expected route patterns."""
@@ -143,15 +197,27 @@ class TestAppConfiguration(unittest.TestCase):
         self.assertTrue(any('/docs' in rule for rule in rules))
         self.assertTrue(any('/api/config' in rule for rule in rules))
         self.assertFalse(any(_FORBIDDEN_CREDENTIAL_ISSUER_PATH in rule for rule in rules))
-{% for item in service.data_domains.controls %}
-        self.assertTrue(any('/api/{{item | lower}}' in rule for rule in rules))
-{% endfor %}
-{% for item in service.data_domains.creates %}
-        self.assertTrue(any('/api/{{item | lower}}' in rule for rule in rules))
-{% endfor %}
-{% for item in service.data_domains.consumes %}
-        self.assertTrue(any('/api/{{item | lower}}' in rule for rule in rules))
-{% endfor %}
+
+        self.assertTrue(any('/api/subscription' in rule for rule in rules))
+
+        self.assertTrue(any('/api/dashboard' in rule for rule in rules))
+
+        self.assertTrue(any('/api/card' in rule for rule in rules))
+
+
+        self.assertTrue(any('/api/event' in rule for rule in rules))
+
+
+        self.assertTrue(any('/api/profile' in rule for rule in rules))
+
+        self.assertTrue(any('/api/customer' in rule for rule in rules))
+
+        self.assertTrue(any('/api/journey' in rule for rule in rules))
+
+        self.assertTrue(any('/api/rating' in rule for rule in rules))
+
+        self.assertTrue(any('/api/note' in rule for rule in rules))
+
         self.assertTrue(any('/metrics' in rule for rule in rules))
 
 
@@ -273,16 +339,16 @@ class TestServerExecution(unittest.TestCase):
     @patch('src.server.app.run')
     @patch('src.server.config')
     def test_main_execution_uses_config_port(self, mock_config, mock_run):
-        """Test that __main__ execution uses {{ (repo.name | upper | replace("-", "_")) }}_PORT from config."""
+        """Test that __main__ execution uses CUSTOMER_API_PORT from config."""
         # Arrange
-        mock_config.{{ (repo.name | upper | replace("-", "_")) }}_PORT = 9999
+        mock_config.CUSTOMER_API_PORT = 9999
         
         # Act
         # Simulate __main__ execution
         import src.server as server_module
         if hasattr(server_module, '__name__'):
             # Execute the main block logic
-            api_port = mock_config.{{ (repo.name | upper | replace("-", "_")) }}_PORT
+            api_port = mock_config.CUSTOMER_API_PORT
             
             # Assert
             self.assertEqual(api_port, 9999)
