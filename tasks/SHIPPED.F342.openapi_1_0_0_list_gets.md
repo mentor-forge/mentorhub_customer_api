@@ -1,6 +1,6 @@
 # F342 – OpenAPI for 1.0.0 list GETs (offset/size, JSON array)
 
-**Status:** Pending  
+**Status:** Shipped  
 **Type:** Feature  
 **Depends On:** `F341_openapi_live_dictionary_schemas`  
 **Description:** Third F-CA14 task. Document the 1.0.0 Get List contract that F343 will implement: JSON-array bodies, `offset`/`size` request headers only, no cursor envelope. Drop the local Journey **list** (shared Journey has no list; factory is by-id only). Keep Customer/Profile/Event/Rating/Note lists and all remaining by-id GETs. No Profile POST/PATCH (F-CA15 / F344). No Python, no pin.
@@ -88,3 +88,22 @@ Run all commands from this API repository root.
 The agent must not update files outside this list.
 
 ## Execution Notes
+
+- Plan:
+  1. Update GET list operations in `docs/openapi.yaml` to 1.0.0 contract (header offset/size, JSON array responses, no cursor parameters/envelopes).
+  2. Remove `GET /api/Journey` list operation (keep `GET /api/Journey/{JourneyId}`).
+  3. Require `resource_id` query param on `GET /api/Note`.
+  4. Remove `InfiniteScrollResponse` component schema.
+  5. Validate spec using `yaml.safe_load` and ensure 0 occurrences of `after_id`, `has_more`, `next_cursor`.
+  6. Run test suite, lint, and build.
+
+- Test Results:
+  - Spec validation: `python3 -c "import yaml; yaml.safe_load(open('docs/openapi.yaml'))"` passed.
+  - Zero occurrences of `after_id`, `has_more`, `next_cursor`, or `InfiniteScrollResponse` across `docs/openapi.yaml`.
+  - All remaining list endpoints declare `offset`/`size` request headers and return JSON arrays.
+  - `GET /api/Journey` list removed; `GET /api/Journey/{JourneyId}` preserved.
+  - `GET /api/Note` list requires `resource_id` query param.
+  - `pipenv run test`: 127 passed, 24 deselected.
+  - `pipenv run lint`: Black check passed with 0 errors.
+  - `pipenv run build`: Passed.
+
