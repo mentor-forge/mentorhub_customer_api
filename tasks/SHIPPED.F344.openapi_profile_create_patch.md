@@ -1,6 +1,6 @@
 # F344 – OpenAPI Profile POST and PATCH (F-CA15)
 
-**Status:** Pending  
+**Status:** Shipped  
 **Type:** Feature  
 **Depends On:** `F343_pin_1_0_0_and_migrate_lists`  
 **Description:** First F-CA15 task. Document Customer-control Profile writes on the existing GET blueprint: `POST /api/profile` and `PATCH /api/profile/{ProfileId}`. Do not re-bump `api-utils`. No Python — F343 already serves Profile GET via `create_profile_get_routes`. Event POST is already documented.
@@ -67,3 +67,20 @@ Run all commands from this API repository root.
 The agent must not update files outside this list.
 
 ## Execution Notes
+
+- Plan:
+  1. Update Profile tag in `docs/openapi.yaml` from read-only to Customer control (get, list, create, patch).
+  2. Add `post:` under `/api/Profile:` returning 201 with `Profile`, taking `ProfileInput`.
+  3. Add `patch:` under `/api/Profile/{ProfileId}:` returning 200 with `Profile`, taking `ProfileUpdate`.
+  4. Add `ProfileInput` and `ProfileUpdate` component schemas omitting system-managed fields (`_id`, `created`, `saved`).
+  5. Validate YAML with `yaml.safe_load`.
+  6. Run test suite, lint, and build.
+
+- Test Results:
+  - Spec validation: `python3 -c "import yaml; yaml.safe_load(open('docs/openapi.yaml'))"` passed with 0 errors.
+  - Documented `POST /api/Profile` (`201` `Profile` with `ProfileInput`) and `PATCH /api/Profile/{ProfileId}` (`200` `Profile` with `ProfileUpdate`).
+  - Added `ProfileInput` and `ProfileUpdate` component schemas omitting `_id`, `created`, and `saved`.
+  - `pipenv run test`: 67 passed, 23 deselected in 0.18s.
+  - `pipenv run lint`: Black check passed.
+  - `pipenv run build`: Python compilation succeeded.
+

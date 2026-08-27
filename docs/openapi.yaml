@@ -29,7 +29,7 @@ tags:
   - name: Event
     description: Event operations (create, read)
   - name: Profile
-    description: Profile operations (read-only)
+    description: 'Profile domain operations (Customer control: get, list, create, patch)'
   - name: Customer
     description: Customer operations (read-only)
   - name: Journey
@@ -354,6 +354,35 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+        - Profile
+      summary: Create a new Profile document
+      description: Create a new Profile document (Customer or Admin)
+      operationId: createProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileInput'
+      responses:
+        '201':
+          description: Profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/Customer:
     get:
       tags:
@@ -574,7 +603,7 @@ paths:
       tags:
         - Profile
       summary: Get Profile by ProfileId
-      description: Retrieve a specific Profile document by its ProfileId (read-only)
+      description: Retrieve a specific Profile document by its ProfileId
       operationId: getProfile
       security:
         - bearerAuth: []
@@ -596,6 +625,46 @@ paths:
                 $ref: '#/components/schemas/Profile'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags:
+        - Profile
+      summary: Update a Profile document
+      description: Update an existing Profile document by its ProfileId (Customer or Admin)
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ProfileId
+          in: path
+          required: true
+          description: The Profile ID (MongoDB ObjectId)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1017,6 +1086,252 @@ components:
               - mentor
         saved:
           $ref: '#/components/schemas/Breadcrumb'
+        status:
+          type: string
+          description: Status of the document
+          enum:
+            - active
+            - archived
+            - provisioned
+            - suspended
+
+    ProfileInput:
+      type: object
+      description: Input payload for creating a Profile document
+      additionalProperties: false
+      properties:
+        customer_id:
+          type: string
+          description: the customer this profile is associated with
+          pattern: '^[0-9a-fA-F]{24}$'
+        description:
+          type: string
+          description: A Comment the user adds to their profile
+          pattern: '^[^\t\n]{0,255}$'
+        email:
+          type: string
+          description: The users email address
+          pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'
+        email_verified:
+          type: boolean
+          description: Has the user verified this email
+        experience:
+          type: array
+          description: Work History - newest to oldest
+          items:
+            type: object
+            description: Array item
+            additionalProperties: false
+            properties:
+              company:
+                type: string
+                description: The Company Name
+                pattern: '^[^\t\n]{0,255}$'
+              roles:
+                type: array
+                description: The roles this person filled at this company
+                items:
+                  type: object
+                  description: Array item
+                  additionalProperties: false
+                  properties:
+                    description:
+                      type: string
+                      description: Description of the work, projects, responsibilities
+                      maxLength: 4096
+                    end:
+                      type: string
+                      format: date-time
+                      description: End Date
+                    start:
+                      type: string
+                      format: date-time
+                      description: Start Date
+                    technologies:
+                      type: array
+                      description: Technologies Used
+                      items:
+                        type: string
+                        enum:
+                          - CSS
+                          - HTML
+                          - Java
+                          - MongoDB
+                          - Other
+                          - Python
+                          - React
+                          - TypeScript
+                    title:
+                      type: string
+                      description: Te Job Title
+                      pattern: '^[^\t\n]{0,255}$'
+        full_name:
+          type: string
+          description: Display name from intake (distinct from IdP username)
+          pattern: '^[^\t\n]{0,255}$'
+        goals:
+          type: array
+          description: 'The goals set by a user '
+          items:
+            type: string
+            description: Array item
+            pattern: '^[^\t\n]{0,255}$'
+        interests:
+          type: array
+          description: A list of topics this person is interested in
+          items:
+            type: string
+            enum:
+              - api
+              - data
+              - design
+              - games
+              - iot
+              - robot
+              - sre
+              - ux
+        mentor_id:
+          type: string
+          description: The _id of this persons Mentor
+          pattern: '^[0-9a-fA-F]{24}$'
+        name:
+          type: string
+          description: The IDP Username used in JWT Claims
+          pattern: '^[^\s]{1,40}$'
+        roles:
+          type: array
+          description: The user roles this profile has
+          items:
+            type: string
+            enum:
+              - admin
+              - coordinator
+              - customer
+              - mentee
+              - mentor
+        status:
+          type: string
+          description: Status of the document
+          enum:
+            - active
+            - archived
+            - provisioned
+            - suspended
+
+    ProfileUpdate:
+      type: object
+      description: Update payload for modifying an existing Profile document
+      additionalProperties: false
+      properties:
+        customer_id:
+          type: string
+          description: the customer this profile is associated with
+          pattern: '^[0-9a-fA-F]{24}$'
+        description:
+          type: string
+          description: A Comment the user adds to their profile
+          pattern: '^[^\t\n]{0,255}$'
+        email:
+          type: string
+          description: The users email address
+          pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'
+        email_verified:
+          type: boolean
+          description: Has the user verified this email
+        experience:
+          type: array
+          description: Work History - newest to oldest
+          items:
+            type: object
+            description: Array item
+            additionalProperties: false
+            properties:
+              company:
+                type: string
+                description: The Company Name
+                pattern: '^[^\t\n]{0,255}$'
+              roles:
+                type: array
+                description: The roles this person filled at this company
+                items:
+                  type: object
+                  description: Array item
+                  additionalProperties: false
+                  properties:
+                    description:
+                      type: string
+                      description: Description of the work, projects, responsibilities
+                      maxLength: 4096
+                    end:
+                      type: string
+                      format: date-time
+                      description: End Date
+                    start:
+                      type: string
+                      format: date-time
+                      description: Start Date
+                    technologies:
+                      type: array
+                      description: Technologies Used
+                      items:
+                        type: string
+                        enum:
+                          - CSS
+                          - HTML
+                          - Java
+                          - MongoDB
+                          - Other
+                          - Python
+                          - React
+                          - TypeScript
+                    title:
+                      type: string
+                      description: Te Job Title
+                      pattern: '^[^\t\n]{0,255}$'
+        full_name:
+          type: string
+          description: Display name from intake (distinct from IdP username)
+          pattern: '^[^\t\n]{0,255}$'
+        goals:
+          type: array
+          description: 'The goals set by a user '
+          items:
+            type: string
+            description: Array item
+            pattern: '^[^\t\n]{0,255}$'
+        interests:
+          type: array
+          description: A list of topics this person is interested in
+          items:
+            type: string
+            enum:
+              - api
+              - data
+              - design
+              - games
+              - iot
+              - robot
+              - sre
+              - ux
+        mentor_id:
+          type: string
+          description: The _id of this persons Mentor
+          pattern: '^[0-9a-fA-F]{24}$'
+        name:
+          type: string
+          description: The IDP Username used in JWT Claims
+          pattern: '^[^\s]{1,40}$'
+        roles:
+          type: array
+          description: The user roles this profile has
+          items:
+            type: string
+            enum:
+              - admin
+              - coordinator
+              - customer
+              - mentee
+              - mentor
         status:
           type: string
           description: Status of the document
