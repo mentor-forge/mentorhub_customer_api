@@ -27,37 +27,26 @@ def _err(response, expected):
 
 @pytest.mark.e2e
 def test_get_notes_endpoint():
-    """Test GET /api/note endpoint."""
+    """Test GET /api/note endpoint with resource_id."""
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(f"{BASE_URL}/api/note", headers=headers)
+    response = requests.get(
+        f"{BASE_URL}/api/note?resource_id=507f1f77bcf86cd799439011",
+        headers=headers,
+    )
     assert response.status_code == 200, _err(response, 200)
 
     response_data = response.json()
-    assert isinstance(
-        response_data, dict
-    ), "Response should be a dict (infinite scroll format)"
-    assert "items" in response_data, "Response should have 'items' key"
-    assert "limit" in response_data, "Response should have 'limit' key"
-    assert "has_more" in response_data, "Response should have 'has_more' key"
-    assert "next_cursor" in response_data, "Response should have 'next_cursor' key"
-    assert isinstance(response_data["items"], list), "Items should be a list"
+    assert isinstance(response_data, list), "Response should be a list"
 
 
 @pytest.mark.e2e
-def test_get_notes_with_name_filter():
-    """Test GET /api/note with name query parameter."""
+def test_get_notes_missing_resource_id():
+    """Test GET /api/note without resource_id returns 400."""
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(f"{BASE_URL}/api/note?name=test", headers=headers)
-    assert response.status_code == 200, _err(response, 200)
-
-    response_data = response.json()
-    assert isinstance(
-        response_data, dict
-    ), "Response should be a dict (infinite scroll format)"
-    assert "items" in response_data, "Response should have 'items' key"
-    assert isinstance(response_data["items"], list), "Items should be a list"
+    response = requests.get(f"{BASE_URL}/api/note", headers=headers)
+    assert response.status_code == 400, _err(response, 400)
 
 
 @pytest.mark.e2e

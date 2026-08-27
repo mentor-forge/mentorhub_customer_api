@@ -10,7 +10,12 @@ from flask import Blueprint, jsonify, request
 from api_utils.flask_utils.token import create_flask_token
 from api_utils.flask_utils.breadcrumb import create_flask_breadcrumb
 from api_utils.flask_utils.route_wrapper import handle_route_exceptions
-from src.services.rating_service import RatingService
+from api_utils.flask_utils.list_request import parse_list_request
+from src.services.rating_service import (
+    RatingService,
+    RATING_LIST_FILTERS,
+    RATING_LIST_ORDER,
+)
 
 import logging
 
@@ -30,46 +35,22 @@ def create_rating_routes():
     @handle_route_exceptions
     def get_ratings():
         """
-        GET /api/rating - Retrieve infinite scroll batch of sorted, filtered rating documents.
-
-        Query Parameters:
-            name: Optional name filter
-            after_id: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
-            limit: Items per batch (default: 10, max: 100)
-            sort_by: Field to sort by (default: 'name')
-            order: Sort order 'asc' or 'desc' (default: 'asc')
-
-        Returns:
-            JSON response with infinite scroll results: {
-                'items': [...],
-                'limit': int,
-                'has_more': bool,
-                'next_cursor': str|None
-            }
-
-        Raises:
-            400 Bad Request: If invalid parameters provided
+        GET /api/rating - Retrieve paginated list of rating documents.
         """
         token = create_flask_token()
         breadcrumb = create_flask_breadcrumb(token)
 
-        # Get query parameters
-        name = request.args.get("name")
-        after_id = request.args.get("after_id")
-        limit = request.args.get("limit", 10, type=int)
-        sort_by = request.args.get("sort_by", "name")
-        order = request.args.get("order", "asc")
+        offset, size, filters, sort_by = parse_list_request(
+            request, RATING_LIST_FILTERS, RATING_LIST_ORDER
+        )
 
-        # Service layer validates parameters and raises HTTPBadRequest if invalid
-        # @handle_route_exceptions decorator will catch and format the exception
         result = RatingService.get_ratings(
             token,
             breadcrumb,
-            name=name,
-            after_id=after_id,
-            limit=limit,
+            offset=offset,
+            size=size,
+            filters=filters,
             sort_by=sort_by,
-            order=order,
         )
 
         logger.info(
@@ -82,12 +63,6 @@ def create_rating_routes():
     def get_rating(rating_id):
         """
         GET /api/rating/<id> - Retrieve a specific rating document by ID.
-
-        Args:
-            rating_id: The rating ID to retrieve
-
-        Returns:
-            JSON response with the rating document
         """
         token = create_flask_token()
         breadcrumb = create_flask_breadcrumb(token)

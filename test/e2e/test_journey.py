@@ -1,5 +1,5 @@
 """
-E2E tests for Journey endpoints (consume-style, read-only).
+E2E tests for Journey endpoints (by-id only).
 
 These tests verify that Journey endpoints work correctly by making
 actual HTTP requests to a running server.
@@ -26,38 +26,12 @@ def _err(response, expected):
 
 
 @pytest.mark.e2e
-def test_get_journeys_endpoint():
-    """Test GET /api/journey endpoint."""
+def test_get_journeys_list_returns_404():
+    """Test GET /api/journey endpoint returns 404 (by-id only)."""
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(f"{BASE_URL}/api/journey", headers=headers)
-    assert response.status_code == 200, _err(response, 200)
-
-    response_data = response.json()
-    assert isinstance(
-        response_data, dict
-    ), "Response should be a dict (infinite scroll format)"
-    assert "items" in response_data, "Response should have 'items' key"
-    assert "limit" in response_data, "Response should have 'limit' key"
-    assert "has_more" in response_data, "Response should have 'has_more' key"
-    assert "next_cursor" in response_data, "Response should have 'next_cursor' key"
-    assert isinstance(response_data["items"], list), "Items should be a list"
-
-
-@pytest.mark.e2e
-def test_get_journeys_with_name_filter():
-    """Test GET /api/journey with name query parameter."""
-    token = get_auth_token()
-    headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(f"{BASE_URL}/api/journey?name=test", headers=headers)
-    assert response.status_code == 200, _err(response, 200)
-
-    response_data = response.json()
-    assert isinstance(
-        response_data, dict
-    ), "Response should be a dict (infinite scroll format)"
-    assert "items" in response_data, "Response should have 'items' key"
-    assert isinstance(response_data["items"], list), "Items should be a list"
+    assert response.status_code == 404, _err(response, 404)
 
 
 @pytest.mark.e2e
@@ -75,5 +49,5 @@ def test_get_journey_not_found():
 @pytest.mark.e2e
 def test_journey_endpoints_require_auth():
     """Test that journey endpoints require authentication."""
-    response = requests.get(f"{BASE_URL}/api/journey")
+    response = requests.get(f"{BASE_URL}/api/journey/507f1f77bcf86cd799439011")
     assert response.status_code == 401, f"Expected 401, got {response.status_code}"

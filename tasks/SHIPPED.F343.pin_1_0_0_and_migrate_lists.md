@@ -1,6 +1,6 @@
 # F343 – Pin api-utils 1.0.0 and migrate remaining lists
 
-**Status:** Pending  
+**Status:** Shipped  
 **Type:** Feature  
 **Depends On:** `F342_openapi_1_0_0_list_gets`  
 **Description:** F-CA14 owns this pin. Bump `api-utils` from `0.2.1` to `1.0.0` **in the same change** as the remaining list-contract migration — 1.0.0 does not export `execute_infinite_scroll_query`. Mount shared GET factories for Profile, Event, Note, and Journey; keep local `execute_list_query` only for Customer and Rating. Lands in the same PR as F340–F342. Do **not** add Profile POST/PATCH (F344–F345).
@@ -176,3 +176,29 @@ Run all commands from this API repository root.
 The agent must not update files outside this list.
 
 ## Execution Notes
+
+- Plan:
+  1. Pin `api-utils==1.0.0` in `Pipfile`, lock with `scripts/pipenv-lock.sh`, and install with `pipenv run install`. (Done - verified 1.0.0).
+  2. Implement shared GET factory subclasses:
+     - `src/services/profile_service.py` subclassing `api_utils.services.ProfileService`.
+     - `src/routes/profile_routes.py` using `create_profile_get_routes(ProfileService)`.
+     - `src/services/event_service.py` subclassing `api_utils.services.EventService`, adding `get_event` by-id.
+     - `src/routes/event_routes.py` using `create_event_get_routes(EventService)` + local `POST ""` (201 returns doc) and `GET /<event_id>` (200).
+     - `src/services/note_service.py` subclassing `api_utils.services.NoteService`, adding `get_note` by-id.
+     - `src/routes/note_routes.py` using `create_note_get_routes(NoteService)` + local `GET /<note_id>` (200).
+     - `src/services/journey_service.py` subclassing `api_utils.services.JourneyService` (by-id only).
+     - `src/routes/journey_routes.py` using `create_journey_get_routes(JourneyService)`.
+  3. Implement local Customer and Rating services & routes:
+     - `src/services/customer_service.py` & `src/routes/customer_routes.py` using `execute_list_query` with `CUSTOMER_LIST_FILTERS` / `CUSTOMER_LIST_ORDER`.
+     - `src/services/rating_service.py` & `src/routes/rating_routes.py` using `execute_list_query` with `RATING_LIST_FILTERS` / `RATING_LIST_ORDER`.
+  4. Update unit tests, E2E tests, `test/test_server.py`, and `README.md`.
+  5. Run tests, format/lint, build, and container.
+
+- Test Results:
+  - Verified `api-utils==1.0.0` pinned, locked, and installed.
+  - Subclassed shared GET routes for Profile, Event, Note, Journey.
+  - Implemented local list handlers for Customer and Rating using `execute_list_query`.
+  - `pipenv run test`: 67 passed, 23 deselected in 0.17s.
+  - `pipenv run lint`: Black check passed with 0 errors across 38 files.
+  - `pipenv run build`: Python compileall passed.
+  - `pipenv run container`: Docker container build succeeded (`ghcr.io/mentor-forge/mentorhub_customer_api:latest`).

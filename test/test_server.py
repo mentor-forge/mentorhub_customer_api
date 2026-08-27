@@ -131,9 +131,9 @@ class TestAppConfiguration(unittest.TestCase):
         self.assertIn(response.status_code, [200, 401, 500])
 
     def test_journey_routes_registered(self):
-        """Test that /api/journey routes are registered."""
-        response = self.client.get("/api/journey")
-        # Should not get 404 (route exists), but may get 401 (auth required)
+        """Test that /api/journey routes are registered (by-id)."""
+        response = self.client.get("/api/journey/507f1f77bcf86cd799439011")
+        # Should not get 404 on by-id route, but may get 401 (auth required)
         self.assertIn(response.status_code, [200, 401, 500])
 
     def test_rating_routes_registered(self):

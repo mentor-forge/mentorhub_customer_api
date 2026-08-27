@@ -59,7 +59,17 @@ pipenv run lint
 
 ## API Endpoints
 
-see the [Open API Specifications](./docs/openapi.yaml) for details on the API
+See the [Open API Specifications](./docs/openapi.yaml) for details on the API.
+
+The Customer API is built with `api-utils==1.0.0` and implements the 1.0.0 list GET contract (`offset`/`size` request headers, JSON array responses):
+- **Shared GET Factories** (`api_utils.routes.shared_get_routes` + local service subclasses):
+  - `/api/profile`: List & Get by ID (`ProfileService`)
+  - `/api/event`: List (`EventService` shared) + local POST & Get by ID
+  - `/api/note`: List by `resource_id` (`NoteService` shared) + local Get by ID
+  - `/api/journey`: Get by ID (`JourneyService` shared)
+- **Local List Handlers** (`api_utils.mongo_utils.execute_list_query`):
+  - `/api/customer`: List & Get by ID (`CustomerService`)
+  - `/api/rating`: List & Get by ID (`RatingService`)
 
 For E2E, mint a Bearer token via `test/e2e/e2e_auth.py` (`get_auth_token()`) with `pipenv run dev` (matching `JWT_SECRET`).
 
