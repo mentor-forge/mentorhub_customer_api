@@ -26,18 +26,10 @@ servers:
 tags:
   - name: Config
     description: Configuration endpoints
-  - name: Metrics
-    description: Monitoring endpoints
-  - name: Subscription
-    description: Subscription operations (create, read, update)
-  - name: Dashboard
-    description: Dashboard operations (create, read, update)
-  - name: Card
-    description: Card operations (create, read, update)
   - name: Event
     description: Event operations (create, read)
   - name: Profile
-    description: Profile operations (read-only)
+    description: 'Profile domain operations (Customer control: get, list, create, patch)'
   - name: Customer
     description: Customer operations (read-only)
   - name: Journey
@@ -100,610 +92,81 @@ paths:
               schema:
                 type: string
 
-  /api/Subscription:
-    get:
-      tags:
-        - Subscription
-      summary: Get all Subscription documents
-      description: Retrieve infinite scroll batch of sorted, filtered Subscription documents
-      operationId: getSubscriptions
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: name
-          in: query
-          required: false
-          description: Optional name filter (supports partial matches, case-insensitive)
-          schema:
-            type: string
-            example: my-Subscription
-        - name: after_id
-          in: query
-          required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-        - name: limit
-          in: query
-          required: false
-          description: Items per page (max 100)
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-            example: 10
-        - name: sort_by
-          in: query
-          required: false
-          description: Field to sort by (name, description, status, created.at_time, saved.at_time)
-          schema:
-            type: string
-            default: name
-            example: name
-        - name: order
-          in: query
-          required: false
-          description: Sort order
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: asc
-            example: asc
-      responses:
-        '200':
-          description: Successfully retrieved controls
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Control'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
-    post:
-      tags:
-        - Subscription
-      summary: Create a new Subscription document
-      description: Create a new Subscription document (requires staff or admin role)
-      operationId: createSubscription
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubscriptionInput'
-      responses:
-        '201':
-          description: Subscription created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _id:
-                    type: string
-                    pattern: '^[0-9a-fA-F]{24}$'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalError'
-
-  /api/Subscription/{SubscriptionId}:
-    get:
-      tags:
-        - Subscription
-      summary: Get Subscription by SubscriptionId
-      description: Retrieve a specific Subscription document by its SubscriptionId
-      operationId: getSubscription
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: SubscriptionId
-          in: path
-          required: true
-          description: The Subscription ID (MongoDB ObjectId)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-      responses:
-        '200':
-          description: Successfully retrieved Subscription
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Subscription'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
-    patch:
-      tags:
-        - Subscription
-      summary: Update Subscription document
-      description: Update a Subscription document (requires admin role). Cannot update _id, created, or saved fields.
-      operationId: updateSubscription
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: SubscriptionId
-          in: path
-          required: true
-          description: The Subscription ID (MongoDB ObjectId)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubscriptionUpdate'
-      responses:
-        '200':
-          description: Subscription updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Subscription'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
-  /api/Dashboard:
-    get:
-      tags:
-        - Dashboard
-      summary: Get all Dashboard documents
-      description: Retrieve infinite scroll batch of sorted, filtered Dashboard documents
-      operationId: getDashboards
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: name
-          in: query
-          required: false
-          description: Optional name filter (supports partial matches, case-insensitive)
-          schema:
-            type: string
-            example: my-Dashboard
-        - name: after_id
-          in: query
-          required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-        - name: limit
-          in: query
-          required: false
-          description: Items per page (max 100)
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-            example: 10
-        - name: sort_by
-          in: query
-          required: false
-          description: Field to sort by (name, description, status, created.at_time, saved.at_time)
-          schema:
-            type: string
-            default: name
-            example: name
-        - name: order
-          in: query
-          required: false
-          description: Sort order
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: asc
-            example: asc
-      responses:
-        '200':
-          description: Successfully retrieved controls
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Control'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
-    post:
-      tags:
-        - Dashboard
-      summary: Create a new Dashboard document
-      description: Create a new Dashboard document (requires staff or admin role)
-      operationId: createDashboard
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DashboardInput'
-      responses:
-        '201':
-          description: Dashboard created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _id:
-                    type: string
-                    pattern: '^[0-9a-fA-F]{24}$'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalError'
-
-  /api/Dashboard/{DashboardId}:
-    get:
-      tags:
-        - Dashboard
-      summary: Get Dashboard by DashboardId
-      description: Retrieve a specific Dashboard document by its DashboardId
-      operationId: getDashboard
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: DashboardId
-          in: path
-          required: true
-          description: The Dashboard ID (MongoDB ObjectId)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-      responses:
-        '200':
-          description: Successfully retrieved Dashboard
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Dashboard'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
-    patch:
-      tags:
-        - Dashboard
-      summary: Update Dashboard document
-      description: Update a Dashboard document (requires admin role). Cannot update _id, created, or saved fields.
-      operationId: updateDashboard
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: DashboardId
-          in: path
-          required: true
-          description: The Dashboard ID (MongoDB ObjectId)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DashboardUpdate'
-      responses:
-        '200':
-          description: Dashboard updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Dashboard'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
-  /api/Card:
-    get:
-      tags:
-        - Card
-      summary: Get all Card documents
-      description: Retrieve infinite scroll batch of sorted, filtered Card documents
-      operationId: getCards
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: name
-          in: query
-          required: false
-          description: Optional name filter (supports partial matches, case-insensitive)
-          schema:
-            type: string
-            example: my-Card
-        - name: after_id
-          in: query
-          required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-        - name: limit
-          in: query
-          required: false
-          description: Items per page (max 100)
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-            example: 10
-        - name: sort_by
-          in: query
-          required: false
-          description: Field to sort by (name, description, status, created.at_time, saved.at_time)
-          schema:
-            type: string
-            default: name
-            example: name
-        - name: order
-          in: query
-          required: false
-          description: Sort order
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: asc
-            example: asc
-      responses:
-        '200':
-          description: Successfully retrieved controls
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Control'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
-    post:
-      tags:
-        - Card
-      summary: Create a new Card document
-      description: Create a new Card document (requires staff or admin role)
-      operationId: createCard
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CardInput'
-      responses:
-        '201':
-          description: Card created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _id:
-                    type: string
-                    pattern: '^[0-9a-fA-F]{24}$'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalError'
-
-  /api/Card/{CardId}:
-    get:
-      tags:
-        - Card
-      summary: Get Card by CardId
-      description: Retrieve a specific Card document by its CardId
-      operationId: getCard
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: CardId
-          in: path
-          required: true
-          description: The Card ID (MongoDB ObjectId)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-      responses:
-        '200':
-          description: Successfully retrieved Card
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Card'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
-    patch:
-      tags:
-        - Card
-      summary: Update Card document
-      description: Update a Card document (requires admin role). Cannot update _id, created, or saved fields.
-      operationId: updateCard
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: CardId
-          in: path
-          required: true
-          description: The Card ID (MongoDB ObjectId)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CardUpdate'
-      responses:
-        '200':
-          description: Card updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Card'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
   /api/Event:
     get:
       tags:
         - Event
       summary: Get all Event documents
-      description: Retrieve infinite scroll batch of sorted, filtered Event documents
+      description: Retrieve a paginated list of Event documents
       operationId: getEvents
       security:
         - bearerAuth: []
       parameters:
-        - name: name
-          in: query
+        - name: offset
+          in: header
           required: false
-          description: Optional name filter (supports partial matches, case-insensitive)
+          description: Pagination offset (number of records to skip)
           schema:
-            type: string
-            example: my-Event
-        - name: after_id
-          in: query
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+        - name: size
+          in: header
           required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-        - name: limit
-          in: query
-          required: false
-          description: Items per page (max 100)
+          description: Pagination size (maximum records to return, max 100)
           schema:
             type: integer
             minimum: 1
             maximum: 100
-            default: 10
-            example: 10
+            default: 20
+            example: 20
+        - name: profile_id
+          in: query
+          required: false
+          description: Filter events by profile ID
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+        - name: type
+          in: query
+          required: false
+          description: Filter events by type
+          schema:
+            type: string
+            enum:
+              - advanced
+              - arrived
+              - completed
+              - encounter
+              - external_received
+              - fail
+              - identity_provisioned
+              - invite_accepted
+              - invite_created
+              - link
+              - login
+              - logout
+              - note
+              - notification_created
+              - notification_dismissed
+              - organization_enriched
+              - payment_recorded
+              - profile_redacted
+              - started
+              - subscription_changed
         - name: sort_by
           in: query
           required: false
-          description: Field to sort by (name, description, created.at_time)
+          description: Field to sort by
           schema:
             type: string
-            default: name
-            example: name
+            enum:
+              - type
+              - created.at_time
+            default: created.at_time
+            example: created.at_time
         - name: order
           in: query
           required: false
@@ -711,36 +174,17 @@ paths:
           schema:
             type: string
             enum: [asc, desc]
-            default: asc
-            example: asc
+            default: desc
+            example: desc
       responses:
         '200':
           description: Successfully retrieved Events
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Event'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -815,11 +259,30 @@ paths:
       tags:
         - Profile
       summary: Get all Profile documents
-      description: Retrieve infinite scroll batch of sorted, filtered Profile documents (read-only)
+      description: Retrieve a paginated list of Profile documents (read-only)
       operationId: getProfiles
       security:
         - bearerAuth: []
       parameters:
+        - name: offset
+          in: header
+          required: false
+          description: Pagination offset (number of records to skip)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+        - name: size
+          in: header
+          required: false
+          description: Pagination size (maximum records to return, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
         - name: name
           in: query
           required: false
@@ -827,30 +290,44 @@ paths:
           schema:
             type: string
             example: my-Profile
-        - name: after_id
+        - name: full_name
           in: query
           required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
+          description: Optional full name filter (supports partial matches, case-insensitive)
           schema:
             type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-        - name: limit
+        - name: email
           in: query
           required: false
-          description: Items per page (max 100)
+          description: Optional email filter (supports partial matches, case-insensitive)
           schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-            example: 10
+            type: string
+        - name: description
+          in: query
+          required: false
+          description: Optional description filter (supports partial matches, case-insensitive)
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Optional status filter
+          schema:
+            type: string
+            enum: [active, archived, provisioned, suspended]
+        - name: roles
+          in: query
+          required: false
+          description: Optional role filter
+          schema:
+            type: string
         - name: sort_by
           in: query
           required: false
-          description: Field to sort by (name, description)
+          description: Field to sort by
           schema:
             type: string
+            enum: [name, full_name, email, status, created.at_time, saved.at_time]
             default: name
             example: name
         - name: order
@@ -868,32 +345,42 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Profile'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      tags:
+        - Profile
+      summary: Create a new Profile document
+      description: Create a new Profile document (Customer or Admin)
+      operationId: createProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileInput'
+      responses:
+        '201':
+          description: Profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalError'
   /api/Customer:
@@ -901,11 +388,30 @@ paths:
       tags:
         - Customer
       summary: Get all Customer documents
-      description: Retrieve infinite scroll batch of sorted, filtered Customer documents (read-only)
+      description: Retrieve a paginated list of Customer documents (read-only)
       operationId: getCustomers
       security:
         - bearerAuth: []
       parameters:
+        - name: offset
+          in: header
+          required: false
+          description: Pagination offset (number of records to skip)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+        - name: size
+          in: header
+          required: false
+          description: Pagination size (maximum records to return, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
         - name: name
           in: query
           required: false
@@ -913,30 +419,13 @@ paths:
           schema:
             type: string
             example: my-Customer
-        - name: after_id
-          in: query
-          required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-        - name: limit
-          in: query
-          required: false
-          description: Items per page (max 100)
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-            example: 10
         - name: sort_by
           in: query
           required: false
-          description: Field to sort by (name, description)
+          description: Field to sort by
           schema:
             type: string
+            enum: [name, description]
             default: name
             example: name
         - name: order
@@ -954,114 +443,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Customer'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
-  /api/Journey:
-    get:
-      tags:
-        - Journey
-      summary: Get all Journey documents
-      description: Retrieve infinite scroll batch of sorted, filtered Journey documents (read-only)
-      operationId: getJourneys
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: name
-          in: query
-          required: false
-          description: Optional name filter (supports partial matches, case-insensitive)
-          schema:
-            type: string
-            example: my-Journey
-        - name: after_id
-          in: query
-          required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-        - name: limit
-          in: query
-          required: false
-          description: Items per page (max 100)
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-            example: 10
-        - name: sort_by
-          in: query
-          required: false
-          description: Field to sort by (name, description)
-          schema:
-            type: string
-            default: name
-            example: name
-        - name: order
-          in: query
-          required: false
-          description: Sort order
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: asc
-            example: asc
-      responses:
-        '200':
-          description: Successfully retrieved Journeys
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Journey'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
+                type: array
+                items:
+                  $ref: '#/components/schemas/Customer'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1073,11 +457,30 @@ paths:
       tags:
         - Rating
       summary: Get all Rating documents
-      description: Retrieve infinite scroll batch of sorted, filtered Rating documents (read-only)
+      description: Retrieve a paginated list of Rating documents (read-only)
       operationId: getRatings
       security:
         - bearerAuth: []
       parameters:
+        - name: offset
+          in: header
+          required: false
+          description: Pagination offset (number of records to skip)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+        - name: size
+          in: header
+          required: false
+          description: Pagination size (maximum records to return, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
         - name: name
           in: query
           required: false
@@ -1085,30 +488,13 @@ paths:
           schema:
             type: string
             example: my-Rating
-        - name: after_id
-          in: query
-          required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-        - name: limit
-          in: query
-          required: false
-          description: Items per page (max 100)
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-            example: 10
         - name: sort_by
           in: query
           required: false
-          description: Field to sort by (name, description)
+          description: Field to sort by
           schema:
             type: string
+            enum: [name, description]
             default: name
             example: name
         - name: order
@@ -1126,28 +512,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Rating'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rating'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1158,45 +525,55 @@ paths:
     get:
       tags:
         - Note
-      summary: Get all Note documents
-      description: Retrieve infinite scroll batch of sorted, filtered Note documents (read-only)
+      summary: Get Note documents for a resource
+      description: Retrieve a paginated list of Note documents for a given resource (read-only)
       operationId: getNotes
       security:
         - bearerAuth: []
       parameters:
-        - name: name
+        - name: resource_id
           in: query
-          required: false
-          description: Optional name filter (supports partial matches, case-insensitive)
-          schema:
-            type: string
-            example: my-Note
-        - name: after_id
-          in: query
-          required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
+          required: true
+          description: Required resource ID to get notes for
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
             example: 507f1f77bcf86cd799439011
-        - name: limit
-          in: query
+        - name: offset
+          in: header
           required: false
-          description: Items per page (max 100)
+          description: Pagination offset (number of records to skip)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+        - name: size
+          in: header
+          required: false
+          description: Pagination size (maximum records to return, max 100)
           schema:
             type: integer
             minimum: 1
             maximum: 100
-            default: 10
-            example: 10
+            default: 20
+            example: 20
+        - name: status
+          in: query
+          required: false
+          description: Optional status filter
+          schema:
+            type: string
+            enum: [active, archived]
         - name: sort_by
           in: query
           required: false
-          description: Field to sort by (name, description)
+          description: Field to sort by
           schema:
             type: string
-            default: name
-            example: name
+            enum: [created.at_time]
+            default: created.at_time
+            example: created.at_time
         - name: order
           in: query
           required: false
@@ -1204,36 +581,17 @@ paths:
           schema:
             type: string
             enum: [asc, desc]
-            default: asc
-            example: asc
+            default: desc
+            example: desc
       responses:
         '200':
           description: Successfully retrieved Notes
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Note'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1245,7 +603,7 @@ paths:
       tags:
         - Profile
       summary: Get Profile by ProfileId
-      description: Retrieve a specific Profile document by its ProfileId (read-only)
+      description: Retrieve a specific Profile document by its ProfileId
       operationId: getProfile
       security:
         - bearerAuth: []
@@ -1267,6 +625,46 @@ paths:
                 $ref: '#/components/schemas/Profile'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    patch:
+      tags:
+        - Profile
+      summary: Update a Profile document
+      description: Update an existing Profile document by its ProfileId (Customer or Admin)
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ProfileId
+          in: path
+          required: true
+          description: The Profile ID (MongoDB ObjectId)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1490,445 +888,724 @@ components:
           pattern: '^[^\s]{1,40}$'
           example: corr-abc123
 
-    Subscription:
-      type: object
-      description: Subscription domain document
-      additionalProperties: false
-      required:
-        - _id
-        - name
-        - created
-        - saved
-      properties:
-        _id:
-          type: string
-          description: MongoDB document ID
-          pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
-          type: string
-          description: Subscription name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Subscription
-        description:
-          type: string
-          description: Subscription description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Subscription document
-        status:
-          type: string
-          description: Subscription status
-          enum:
-            - active
-            - archived
-          example: active
-        created:
-          $ref: '#/components/schemas/Breadcrumb'
-        saved:
-          $ref: '#/components/schemas/Breadcrumb'
-
-    SubscriptionInput:
-      type: object
-      description: Input for creating a Subscription document
-      properties:
-        name:
-          type: string
-          description: Subscription name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Subscription
-        description:
-          type: string
-          description: Subscription description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Subscription document
-        status:
-          type: string
-          description: Subscription status
-          enum:
-            - active
-            - archived
-          example: active
-
-    SubscriptionUpdate:
-      type: object
-      description: Fields to update in a Subscription document (cannot include _id, created, saved)
-      properties:
-        name:
-          type: string
-          description: Subscription name
-          pattern: '^[^\s]{1,40}$'
-        description:
-          type: string
-          description: Subscription description
-          pattern: '^[^\t\n]{0,255}$'
-        status:
-          type: string
-          description: Subscription status
-          enum:
-            - active
-            - archived
-    Dashboard:
-      type: object
-      description: Dashboard domain document
-      additionalProperties: false
-      required:
-        - _id
-        - name
-        - created
-        - saved
-      properties:
-        _id:
-          type: string
-          description: MongoDB document ID
-          pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
-          type: string
-          description: Dashboard name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Dashboard
-        description:
-          type: string
-          description: Dashboard description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Dashboard document
-        status:
-          type: string
-          description: Dashboard status
-          enum:
-            - active
-            - archived
-          example: active
-        created:
-          $ref: '#/components/schemas/Breadcrumb'
-        saved:
-          $ref: '#/components/schemas/Breadcrumb'
-
-    DashboardInput:
-      type: object
-      description: Input for creating a Dashboard document
-      properties:
-        name:
-          type: string
-          description: Dashboard name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Dashboard
-        description:
-          type: string
-          description: Dashboard description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Dashboard document
-        status:
-          type: string
-          description: Dashboard status
-          enum:
-            - active
-            - archived
-          example: active
-
-    DashboardUpdate:
-      type: object
-      description: Fields to update in a Dashboard document (cannot include _id, created, saved)
-      properties:
-        name:
-          type: string
-          description: Dashboard name
-          pattern: '^[^\s]{1,40}$'
-        description:
-          type: string
-          description: Dashboard description
-          pattern: '^[^\t\n]{0,255}$'
-        status:
-          type: string
-          description: Dashboard status
-          enum:
-            - active
-            - archived
-    Card:
-      type: object
-      description: Card domain document
-      additionalProperties: false
-      required:
-        - _id
-        - name
-        - created
-        - saved
-      properties:
-        _id:
-          type: string
-          description: MongoDB document ID
-          pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
-          type: string
-          description: Card name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Card
-        description:
-          type: string
-          description: Card description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Card document
-        status:
-          type: string
-          description: Card status
-          enum:
-            - active
-            - archived
-          example: active
-        created:
-          $ref: '#/components/schemas/Breadcrumb'
-        saved:
-          $ref: '#/components/schemas/Breadcrumb'
-
-    CardInput:
-      type: object
-      description: Input for creating a Card document
-      properties:
-        name:
-          type: string
-          description: Card name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Card
-        description:
-          type: string
-          description: Card description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Card document
-        status:
-          type: string
-          description: Card status
-          enum:
-            - active
-            - archived
-          example: active
-
-    CardUpdate:
-      type: object
-      description: Fields to update in a Card document (cannot include _id, created, saved)
-      properties:
-        name:
-          type: string
-          description: Card name
-          pattern: '^[^\s]{1,40}$'
-        description:
-          type: string
-          description: Card description
-          pattern: '^[^\t\n]{0,255}$'
-        status:
-          type: string
-          description: Card status
-          enum:
-            - active
-            - archived
     Event:
       type: object
-      description: Event domain document
+      description: A meaningful event in the system.
       additionalProperties: false
-      required:
-        - _id
-        - name
-        - created
       properties:
         _id:
           type: string
-          description: MongoDB document ID
+          description: The unique identifier for the Event.
           pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
-          type: string
-          description: Event name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Event
-        description:
-          type: string
-          description: Event description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Event document
-        status:
-          type: string
-          description: Event status
-          example: active
+        context:
+          type: object
+          description: Context, additional properties allowed
+          additionalProperties: true
+          properties:
+            profile_id:
+              type: string
+              description: Profile associated with the event
+              pattern: '^[0-9a-fA-F]{24}$'
         created:
           $ref: '#/components/schemas/Breadcrumb'
+        type:
+          type: string
+          description: The event type
+          enum:
+            - advanced
+            - arrived
+            - completed
+            - encounter
+            - external_received
+            - fail
+            - identity_provisioned
+            - invite_accepted
+            - invite_created
+            - link
+            - login
+            - logout
+            - note
+            - notification_created
+            - notification_dismissed
+            - organization_enriched
+            - payment_recorded
+            - profile_redacted
+            - started
+            - subscription_changed
 
     EventInput:
       type: object
-      description: Input for creating a Event document
+      description: Input for creating an Event document
+      required:
+        - type
       properties:
-        name:
+        type:
           type: string
-          description: Event name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Event
-        description:
-          type: string
-          description: Event description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Event document
-        status:
-          type: string
-          description: Event status
-          example: active
+          description: The event type
+          enum:
+            - advanced
+            - arrived
+            - completed
+            - encounter
+            - external_received
+            - fail
+            - identity_provisioned
+            - invite_accepted
+            - invite_created
+            - link
+            - login
+            - logout
+            - note
+            - notification_created
+            - notification_dismissed
+            - organization_enriched
+            - payment_recorded
+            - profile_redacted
+            - started
+            - subscription_changed
+
     Profile:
       type: object
-      description: Profile domain document (read-only)
+      description: Mentor Hub user profile document
       additionalProperties: false
-      required:
-        - _id
-        - name
       properties:
         _id:
           type: string
-          description: MongoDB document ID
+          description: The unique identifier for the Profile.
           pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
+        created:
+          $ref: '#/components/schemas/Breadcrumb'
+        customer_id:
           type: string
-          description: Profile name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Profile
+          description: the customer this profile is associated with
+          pattern: '^[0-9a-fA-F]{24}$'
         description:
           type: string
-          description: Profile description
+          description: A Comment the user adds to their profile
           pattern: '^[^\t\n]{0,255}$'
-          example: A sample Profile document
+        email:
+          type: string
+          description: The users email address
+          pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'
+        email_verified:
+          type: boolean
+          description: Has the user verified this email
+        experience:
+          type: array
+          description: Work History - newest to oldest
+          items:
+            type: object
+            description: Array item
+            additionalProperties: false
+            properties:
+              company:
+                type: string
+                description: The Company Name
+                pattern: '^[^\t\n]{0,255}$'
+              roles:
+                type: array
+                description: The roles this person filled at this company
+                items:
+                  type: object
+                  description: Array item
+                  additionalProperties: false
+                  properties:
+                    description:
+                      type: string
+                      description: Description of the work, projects, responsibilities
+                      maxLength: 4096
+                    end:
+                      type: string
+                      format: date-time
+                      description: End Date
+                    start:
+                      type: string
+                      format: date-time
+                      description: Start Date
+                    technologies:
+                      type: array
+                      description: Technologies Used
+                      items:
+                        type: string
+                        enum:
+                          - CSS
+                          - HTML
+                          - Java
+                          - MongoDB
+                          - Other
+                          - Python
+                          - React
+                          - TypeScript
+                    title:
+                      type: string
+                      description: Te Job Title
+                      pattern: '^[^\t\n]{0,255}$'
+        full_name:
+          type: string
+          description: Display name from intake (distinct from IdP username)
+          pattern: '^[^\t\n]{0,255}$'
+        goals:
+          type: array
+          description: 'The goals set by a user '
+          items:
+            type: string
+            description: Array item
+            pattern: '^[^\t\n]{0,255}$'
+        interests:
+          type: array
+          description: A list of topics this person is interested in
+          items:
+            type: string
+            enum:
+              - api
+              - data
+              - design
+              - games
+              - iot
+              - robot
+              - sre
+              - ux
+        mentor_id:
+          type: string
+          description: The _id of this persons Mentor
+          pattern: '^[0-9a-fA-F]{24}$'
+        name:
+          type: string
+          description: The IDP Username used in JWT Claims
+          pattern: '^[^\s]{1,40}$'
+        roles:
+          type: array
+          description: The user roles this profile has
+          items:
+            type: string
+            enum:
+              - admin
+              - coordinator
+              - customer
+              - mentee
+              - mentor
+        saved:
+          $ref: '#/components/schemas/Breadcrumb'
         status:
           type: string
-          description: Profile status
-          example: active
+          description: Status of the document
+          enum:
+            - active
+            - archived
+            - provisioned
+            - suspended
+
+    ProfileInput:
+      type: object
+      description: Input payload for creating a Profile document
+      additionalProperties: false
+      properties:
+        customer_id:
+          type: string
+          description: the customer this profile is associated with
+          pattern: '^[0-9a-fA-F]{24}$'
+        description:
+          type: string
+          description: A Comment the user adds to their profile
+          pattern: '^[^\t\n]{0,255}$'
+        email:
+          type: string
+          description: The users email address
+          pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'
+        email_verified:
+          type: boolean
+          description: Has the user verified this email
+        experience:
+          type: array
+          description: Work History - newest to oldest
+          items:
+            type: object
+            description: Array item
+            additionalProperties: false
+            properties:
+              company:
+                type: string
+                description: The Company Name
+                pattern: '^[^\t\n]{0,255}$'
+              roles:
+                type: array
+                description: The roles this person filled at this company
+                items:
+                  type: object
+                  description: Array item
+                  additionalProperties: false
+                  properties:
+                    description:
+                      type: string
+                      description: Description of the work, projects, responsibilities
+                      maxLength: 4096
+                    end:
+                      type: string
+                      format: date-time
+                      description: End Date
+                    start:
+                      type: string
+                      format: date-time
+                      description: Start Date
+                    technologies:
+                      type: array
+                      description: Technologies Used
+                      items:
+                        type: string
+                        enum:
+                          - CSS
+                          - HTML
+                          - Java
+                          - MongoDB
+                          - Other
+                          - Python
+                          - React
+                          - TypeScript
+                    title:
+                      type: string
+                      description: Te Job Title
+                      pattern: '^[^\t\n]{0,255}$'
+        full_name:
+          type: string
+          description: Display name from intake (distinct from IdP username)
+          pattern: '^[^\t\n]{0,255}$'
+        goals:
+          type: array
+          description: 'The goals set by a user '
+          items:
+            type: string
+            description: Array item
+            pattern: '^[^\t\n]{0,255}$'
+        interests:
+          type: array
+          description: A list of topics this person is interested in
+          items:
+            type: string
+            enum:
+              - api
+              - data
+              - design
+              - games
+              - iot
+              - robot
+              - sre
+              - ux
+        mentor_id:
+          type: string
+          description: The _id of this persons Mentor
+          pattern: '^[0-9a-fA-F]{24}$'
+        name:
+          type: string
+          description: The IDP Username used in JWT Claims
+          pattern: '^[^\s]{1,40}$'
+        roles:
+          type: array
+          description: The user roles this profile has
+          items:
+            type: string
+            enum:
+              - admin
+              - coordinator
+              - customer
+              - mentee
+              - mentor
+        status:
+          type: string
+          description: Status of the document
+          enum:
+            - active
+            - archived
+            - provisioned
+            - suspended
+
+    ProfileUpdate:
+      type: object
+      description: Update payload for modifying an existing Profile document
+      additionalProperties: false
+      properties:
+        customer_id:
+          type: string
+          description: the customer this profile is associated with
+          pattern: '^[0-9a-fA-F]{24}$'
+        description:
+          type: string
+          description: A Comment the user adds to their profile
+          pattern: '^[^\t\n]{0,255}$'
+        email:
+          type: string
+          description: The users email address
+          pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$'
+        email_verified:
+          type: boolean
+          description: Has the user verified this email
+        experience:
+          type: array
+          description: Work History - newest to oldest
+          items:
+            type: object
+            description: Array item
+            additionalProperties: false
+            properties:
+              company:
+                type: string
+                description: The Company Name
+                pattern: '^[^\t\n]{0,255}$'
+              roles:
+                type: array
+                description: The roles this person filled at this company
+                items:
+                  type: object
+                  description: Array item
+                  additionalProperties: false
+                  properties:
+                    description:
+                      type: string
+                      description: Description of the work, projects, responsibilities
+                      maxLength: 4096
+                    end:
+                      type: string
+                      format: date-time
+                      description: End Date
+                    start:
+                      type: string
+                      format: date-time
+                      description: Start Date
+                    technologies:
+                      type: array
+                      description: Technologies Used
+                      items:
+                        type: string
+                        enum:
+                          - CSS
+                          - HTML
+                          - Java
+                          - MongoDB
+                          - Other
+                          - Python
+                          - React
+                          - TypeScript
+                    title:
+                      type: string
+                      description: Te Job Title
+                      pattern: '^[^\t\n]{0,255}$'
+        full_name:
+          type: string
+          description: Display name from intake (distinct from IdP username)
+          pattern: '^[^\t\n]{0,255}$'
+        goals:
+          type: array
+          description: 'The goals set by a user '
+          items:
+            type: string
+            description: Array item
+            pattern: '^[^\t\n]{0,255}$'
+        interests:
+          type: array
+          description: A list of topics this person is interested in
+          items:
+            type: string
+            enum:
+              - api
+              - data
+              - design
+              - games
+              - iot
+              - robot
+              - sre
+              - ux
+        mentor_id:
+          type: string
+          description: The _id of this persons Mentor
+          pattern: '^[0-9a-fA-F]{24}$'
+        name:
+          type: string
+          description: The IDP Username used in JWT Claims
+          pattern: '^[^\s]{1,40}$'
+        roles:
+          type: array
+          description: The user roles this profile has
+          items:
+            type: string
+            enum:
+              - admin
+              - coordinator
+              - customer
+              - mentee
+              - mentor
+        status:
+          type: string
+          description: Status of the document
+          enum:
+            - active
+            - archived
+            - provisioned
+            - suspended
+
     Customer:
       type: object
-      description: Customer domain document (read-only)
+      description: Paying sponsor organization (Organization) that funds mentoring for craftspeople; Path A Admin ingress provisions a Customer and Customer API enriches it.
       additionalProperties: false
-      required:
-        - _id
-        - name
       properties:
         _id:
           type: string
-          description: MongoDB document ID
+          description: The unique identifier for the Customer.
           pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
-          type: string
-          description: Customer name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Customer
+        created:
+          $ref: '#/components/schemas/Breadcrumb'
         description:
           type: string
-          description: Customer description
+          description: The description of the Customer.
           pattern: '^[^\t\n]{0,255}$'
-          example: A sample Customer document
+        name:
+          type: string
+          description: The searchable name of the document
+          pattern: '^[^\t\n]{0,255}$'
+        saved:
+          $ref: '#/components/schemas/Breadcrumb'
         status:
           type: string
-          description: Customer status
-          example: active
+          description: Status of the document
+          enum:
+            - active
+            - archived
+            - provisioned
+        stripe_customer_id:
+          type: string
+          description: Stripe Customer id (cus_…) for billing sync
+          pattern: '^[^\t\n]{0,255}$'
+        subscriptions:
+          type: array
+          description: Embedded purchase / entitlement subscriptions (business + Stripe sync)
+          items:
+            type: object
+            description: Array item
+            additionalProperties: false
+            properties:
+              cancel_at_period_end:
+                type: boolean
+                description: Stripe cancel_at_period_end — entitlement continues until current_period_end when status is still active
+              current_period_end:
+                type: string
+                format: date-time
+                description: End of the current Stripe billing period
+              discount_code:
+                type: string
+                description: Redeemed discount code or empty string if none
+                pattern: '^[^\t\n]{0,255}$'
+              encounters_mo:
+                type: number
+                description: Encounters-per-month entitlement
+                minimum: 0
+                multipleOf: 1
+              free_encounters_granted:
+                type: number
+                description: Free encounters granted from Discount at checkout (0 if none)
+                minimum: 0
+                multipleOf: 1
+              free_encounters_remaining:
+                type: number
+                description: Remaining free encounters (starts at granted; decremented by Encounter domain)
+                minimum: 0
+                multipleOf: 1
+              mentee_count:
+                type: number
+                description: Entitled mentee seats
+                minimum: 0
+                multipleOf: 1
+              quantity:
+                type: number
+                description: Purchased seat quantity
+                minimum: 0
+                multipleOf: 1
+              status:
+                type: string
+                description: Stripe subscription lifecycle status
+                enum:
+                  - active
+                  - canceled
+                  - past_due
+              stripe_price_id:
+                type: string
+                description: Stripe Price id (price_…)
+                pattern: '^[^\t\n]{0,255}$'
+              stripe_subscription_id:
+                type: string
+                description: Stripe Subscription id (sub_…)
+                pattern: '^[^\t\n]{0,255}$'
+              subscription:
+                type: string
+                description: Plan identifier (matches Setting Product.subscription)
+                pattern: '^[^\s]{1,40}$'
+              total_cost:
+                type: number
+                description: quantity x unit_cost (or Stripe-reconciled) in minor units
+                minimum: 0
+                multipleOf: 1
+              unit_cost:
+                type: number
+                description: Unit price at purchase in minor units (snapshot of Product.unit_price)
+                minimum: 0
+                multipleOf: 1
+
     Journey:
       type: object
-      description: Journey domain document (read-only)
+      description: A users progress on their learning path
       additionalProperties: false
-      required:
-        - _id
-        - name
       properties:
         _id:
           type: string
-          description: MongoDB document ID
+          description: The unique identifier for the Journey.
           pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
-          type: string
-          description: Journey name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Journey
+        created:
+          $ref: '#/components/schemas/Breadcrumb'
         description:
           type: string
-          description: Journey description
+          description: A description of this journey
           pattern: '^[^\t\n]{0,255}$'
-          example: A sample Journey document
+        modules:
+          type: array
+          description: The modules that make up this journey
+          items:
+            type: object
+            description: Array item
+            additionalProperties: false
+            properties:
+              description:
+                type: string
+                description: The Description of this Module
+                pattern: '^[^\t\n]{0,255}$'
+              name:
+                type: string
+                description: The Module Name
+                pattern: '^[^\s]{1,40}$'
+              topics:
+                type: array
+                description: The Topics of this Module
+                items:
+                  type: object
+                  description: Array item
+                  additionalProperties: false
+                  properties:
+                    description:
+                      type: string
+                      description: A Description of the Topic
+                      pattern: '^[^\t\n]{0,255}$'
+                    name:
+                      type: string
+                      description: The Topic Name
+                      pattern: '^[^\s]{1,40}$'
+                    resources:
+                      type: array
+                      description: The Resources _ID's for this Topic
+                      items:
+                        type: string
+                        description: Array item
+                        pattern: '^[0-9a-fA-F]{24}$'
+        name:
+          type: string
+          description: The Journey Name
+          pattern: '^[^\s]{1,40}$'
+        now:
+          type: array
+          description: The resource _id's the person is currently working on
+          items:
+            type: object
+            description: Array item
+            additionalProperties: false
+            properties:
+              added:
+                type: string
+                format: date-time
+                description: When the resource was added to the Now scope
+              resource_id:
+                type: string
+                description: The Resource ID
+                pattern: '^[0-9a-fA-F]{24}$'
+              started:
+                type: string
+                format: date-time
+                description: The first time the link was followed
+              used:
+                type: number
+                description: The count of times the link was followed
+                minimum: 0
+                multipleOf: 1
+        profile_id:
+          type: string
+          description: The Profile ID of the owner of this journey
+          pattern: '^[0-9a-fA-F]{24}$'
+        saved:
+          $ref: '#/components/schemas/Breadcrumb'
         status:
           type: string
-          description: Journey status
-          example: active
+          description: Status of the document
+          enum:
+            - active
+            - archived
+
     Rating:
       type: object
-      description: Rating domain document (read-only)
+      description: A rating given to a resource by a user
       additionalProperties: false
       required:
         - _id
-        - name
+        - resource_id
       properties:
         _id:
           type: string
-          description: MongoDB document ID
+          description: The unique identifier for the Rating.
           pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
+        created:
+          $ref: '#/components/schemas/Breadcrumb'
+        profile_id:
           type: string
-          description: Rating name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Rating
-        description:
+          description: The profile of the person rating the resource.
+          pattern: '^[0-9a-fA-F]{24}$'
+        rating:
+          type: number
+          description: The Resource Rating
+          minimum: 1
+          maximum: 4
+          multipleOf: 1
+        resource_id:
           type: string
-          description: Rating description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Rating document
+          description: The resource being rated
+          pattern: '^[0-9a-fA-F]{24}$'
         status:
           type: string
-          description: Rating status
-          example: active
+          description: Status of the document
+          enum:
+            - active
+            - archived
+
     Note:
       type: object
-      description: Note domain document (read-only)
+      description: A note about a resource.
       additionalProperties: false
-      required:
-        - _id
-        - name
       properties:
         _id:
           type: string
-          description: MongoDB document ID
+          description: The unique identifier for the Note.
           pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
+        created:
+          $ref: '#/components/schemas/Breadcrumb'
+        note:
           type: string
-          description: Note name
-          pattern: '^[^\s]{1,40}$'
-          example: my-Note
-        description:
+          description: The text of the note
+          maxLength: 4096
+        profile_id:
           type: string
-          description: Note description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample Note document
+          description: The Profile ID of the person who took this note
+          pattern: '^[0-9a-fA-F]{24}$'
+        resource_id:
+          type: string
+          description: The Resource ID this note is for
+          pattern: '^[0-9a-fA-F]{24}$'
+        saved:
+          $ref: '#/components/schemas/Breadcrumb'
         status:
           type: string
-          description: Note status
-          example: active
-    InfiniteScrollResponse:
-      type: object
-      description: Infinite scroll pagination response
-      required:
-        - items
-        - limit
-        - has_more
-        - next_cursor
-      properties:
-        items:
-          type: array
-          description: Array of resource documents
-          items: {}
-        limit:
-          type: integer
-          description: Items per batch
-          example: 10
-        has_more:
-          type: boolean
-          description: Whether there are more items available
-          example: true
-        next_cursor:
-          type: string
-          nullable: true
-          description: ID of last item for next request (null if no more items)
-          pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
+          description: Status of the document
+          enum:
+            - active
+            - archived

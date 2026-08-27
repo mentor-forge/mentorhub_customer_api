@@ -1,5 +1,5 @@
 """
-E2E tests for Profile endpoints (consume-style, read-only).
+E2E tests for Profile endpoints (Customer control).
 
 These tests verify that Profile endpoints work correctly by making
 actual HTTP requests to a running server.
@@ -10,6 +10,8 @@ To run these tests:
 
 API runs on port 8387 (same for dev and api).
 """
+
+import time
 import pytest
 import requests
 
@@ -33,12 +35,7 @@ def test_get_profiles_endpoint():
     assert response.status_code == 200, _err(response, 200)
 
     response_data = response.json()
-    assert isinstance(response_data, dict), "Response should be a dict (infinite scroll format)"
-    assert "items" in response_data, "Response should have 'items' key"
-    assert "limit" in response_data, "Response should have 'limit' key"
-    assert "has_more" in response_data, "Response should have 'has_more' key"
-    assert "next_cursor" in response_data, "Response should have 'next_cursor' key"
-    assert isinstance(response_data["items"], list), "Items should be a list"
+    assert isinstance(response_data, list), "Response should be a list"
 
 
 @pytest.mark.e2e
@@ -50,9 +47,34 @@ def test_get_profiles_with_name_filter():
     assert response.status_code == 200, _err(response, 200)
 
     response_data = response.json()
-    assert isinstance(response_data, dict), "Response should be a dict (infinite scroll format)"
-    assert "items" in response_data, "Response should have 'items' key"
-    assert isinstance(response_data["items"], list), "Items should be a list"
+    assert isinstance(response_data, list), "Response should be a list"
+
+
+@pytest.mark.e2e
+def test_create_and_patch_profile_endpoint():
+    """Test POST /api/profile and PATCH /api/profile/<id>."""
+    token = get_auth_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    create_data = {
+        "name": f"e2e-user-{int(time.time())}",
+        "email": "e2e@example.com",
+        "description": "Initial description",
+    }
+    create_res = requests.post(
+        f"{BASE_URL}/api/profile", headers=headers, json=create_data
+    )
+    assert create_res.status_code == 201, _err(create_res, 201)
+    profile = create_res.json()
+    profile_id = profile["_id"]
+    assert profile["description"] == "Initial description"
+
+    patch_data = {"description": "Updated description"}
+    patch_res = requests.patch(
+        f"{BASE_URL}/api/profile/{profile_id}", headers=headers, json=patch_data
+    )
+    assert patch_res.status_code == 200, _err(patch_res, 200)
+    updated = patch_res.json()
+    assert updated["description"] == "Updated description"
 
 
 @pytest.mark.e2e

@@ -1,5 +1,5 @@
 """
-E2E tests for Event endpoints (create-style with POST and GET).
+E2E tests for Event endpoints.
 
 These tests verify that Event endpoints work correctly by making
 actual HTTP requests to a running server.
@@ -10,6 +10,7 @@ To run these tests:
 
 API runs on port 8387 (same for dev and api).
 """
+
 import pytest
 import requests
 
@@ -26,12 +27,11 @@ def _err(response, expected):
 
 @pytest.mark.e2e
 def test_create_event_endpoint():
-    """Test POST /api/event endpoint and basic retrieval by ID and search."""
+    """Test POST /api/event endpoint."""
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
     data = {
-        "name": "e2e-test-event",
-        "description": "E2E test event document",
+        "type": "login",
     }
 
     response = requests.post(f"{BASE_URL}/api/event", headers=headers, json=data)
@@ -39,7 +39,7 @@ def test_create_event_endpoint():
 
     response_data = response.json()
     assert "_id" in response_data, "Response missing '_id' key"
-    assert response_data["name"] == "e2e-test-event"
+    assert response_data["type"] == "login"
     assert "created" in response_data
 
 
@@ -52,12 +52,7 @@ def test_get_events_endpoint():
     assert response.status_code == 200, _err(response, 200)
 
     response_data = response.json()
-    assert isinstance(response_data, dict), "Response should be a dict (infinite scroll format)"
-    assert "items" in response_data, "Response should have 'items' key"
-    assert "limit" in response_data, "Response should have 'limit' key"
-    assert "has_more" in response_data, "Response should have 'has_more' key"
-    assert "next_cursor" in response_data, "Response should have 'next_cursor' key"
-    assert isinstance(response_data["items"], list), "Items should be a list"
+    assert isinstance(response_data, list), "Response should be a list"
 
 
 @pytest.mark.e2e
