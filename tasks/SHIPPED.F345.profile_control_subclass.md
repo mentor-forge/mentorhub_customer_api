@@ -1,6 +1,6 @@
 # F345 – Profile control subclass (create + PATCH + inbound RBAC)
 
-**Status:** Pending  
+**Status:** Shipped  
 **Type:** Feature  
 **Depends On:** `F344_openapi_profile_create_patch`  
 **Description:** Remainder of F-CA15. Pin stays `api-utils==1.0.0` (refresh lockfile only if needed). Local `ProfileService` already subclasses shared GET/create from F343. Add inbound write checks, `update_profile`, and Profile POST/PATCH on the factory blueprint. Routes keep importing the local subclass. Do not 403 on GET.
@@ -107,3 +107,20 @@ Run all commands from this API repository root.
 The agent must not update files outside this list.
 
 ## Execution Notes
+
+- Plan:
+  1. Implement Profile control subclass in `src/services/profile_service.py`:
+     - Inbound write RBAC (`_check_permission`) requiring `ROLE_CUSTOMER` or `ROLE_ADMIN` for `create` and `update`; delegating `read` to `super()`.
+     - `create_profile`: stamps `customer_id` from token when caller is customer (not admin), calls `super().create_profile(...)`.
+     - `update_profile`: checks permissions (admin, own profile, or same `customer_id`), strips `_id`/`created`/`saved`, stamps `saved`, encodes doc, and updates via `MongoIO.update_document`.
+  2. Mount `POST ""` and `PATCH /<profile_id>` in `src/routes/profile_routes.py` using `ProfileService`.
+  3. Update unit tests in `test/services/test_profile_service.py` and `test/routes/test_profile_routes.py`.
+  4. Update `test/e2e/test_profile.py` with create and patch coverage.
+  5. Run tests, format, lint, build, and container packaging verification.
+
+- Test Results:
+  - `pipenv run test`: 77 passed, 24 deselected in 0.19s.
+  - `pipenv run lint`: Black check passed (0 errors across 38 files).
+  - `pipenv run build`: Python compileall succeeded.
+  - `pipenv run container`: Docker container build succeeded (`ghcr.io/mentor-forge/mentorhub_customer_api:latest`).
+  - Grep confirmations: 0 hits for `from api_utils.services import .+Service` in `src/routes`; 0 hits for obsolete pagination terms in code/docs.

@@ -7,6 +7,7 @@ from unittest.mock import patch, MagicMock
 from bson import ObjectId
 from src.services.profile_service import ProfileService
 from api_utils.flask_utils.exceptions import (
+    HTTPForbidden,
     HTTPNotFound,
     HTTPInternalServerError,
 )
@@ -17,9 +18,20 @@ class TestProfileService(unittest.TestCase):
 
     def setUp(self):
         """Set up the test fixture."""
-        self.mock_token = {
-            "user_id": "test_user",
-            "roles": ["developer", "admin"],
+        self.admin_token = {
+            "user_id": "admin_user",
+            "roles": ["admin"],
+            "profile_id": "507f1f77bcf86cd799439011",
+        }
+        self.customer_token = {
+            "user_id": "customer_user",
+            "roles": ["customer"],
+            "customer_id": "507f1f77bcf86cd799439099",
+            "profile_id": "507f1f77bcf86cd799439011",
+        }
+        self.mentee_token = {
+            "user_id": "mentee_user",
+            "roles": ["mentee"],
             "profile_id": "507f1f77bcf86cd799439011",
         }
         self.mock_breadcrumb = {
@@ -35,6 +47,7 @@ class TestProfileService(unittest.TestCase):
         """Test successful retrieval of profiles."""
         mock_config = MagicMock()
         mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_ADMIN = "admin"
         mock_get_config.return_value = mock_config
 
         mock_docs = [
@@ -44,7 +57,7 @@ class TestProfileService(unittest.TestCase):
         mock_execute_list_query.return_value = mock_docs
 
         result = ProfileService.get_profiles(
-            self.mock_token, self.mock_breadcrumb, offset=0, size=20
+            self.mentee_token, self.mock_breadcrumb, offset=0, size=20
         )
 
         self.assertIsInstance(result, list)
@@ -57,6 +70,7 @@ class TestProfileService(unittest.TestCase):
         """Test successful retrieval of single profile."""
         mock_config = MagicMock()
         mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_ADMIN = "admin"
         mock_get_config.return_value = mock_config
 
         mock_mongo = MagicMock()
@@ -68,7 +82,7 @@ class TestProfileService(unittest.TestCase):
         mock_get_mongo.return_value = mock_mongo
 
         result = ProfileService.get_profile(
-            "507f1f77bcf86cd799439011", self.mock_token, self.mock_breadcrumb
+            "507f1f77bcf86cd799439011", self.admin_token, self.mock_breadcrumb
         )
 
         self.assertEqual(result["name"], "profile1")
@@ -79,6 +93,7 @@ class TestProfileService(unittest.TestCase):
         """Test retrieval of non-existent profile."""
         mock_config = MagicMock()
         mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_ADMIN = "admin"
         mock_get_config.return_value = mock_config
 
         mock_mongo = MagicMock()
@@ -87,8 +102,218 @@ class TestProfileService(unittest.TestCase):
 
         with self.assertRaises(HTTPNotFound):
             ProfileService.get_profile(
-                "507f1f77bcf86cd799439011", self.mock_token, self.mock_breadcrumb
+                "507f1f77bcf86cd799439011", self.admin_token, self.mock_breadcrumb
             )
+
+    @patch("api_utils.services.profile_service.Config.get_instance")
+    @patch("api_utils.services.profile_service.MongoIO.get_instance")
+    def test_create_profile_as_customer_stamps_customer_id(
+        self, mock_get_mongo, mock_get_config
+    ):
+        """Test customer create stamps customer_id from token."""
+        mock_config = MagicMock()
+        mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_CUSTOMER = "customer"
+        mock_config.ROLE_ADMIN = "admin"
+        mock_get_config.return_value = mock_config
+
+        mock_mongo = MagicMock()
+        mock_mongo.create_document.return_value = "507f1f77bcf86cd799439011"
+        mock_get_mongo.return_value = mock_mongo
+
+        data = {"name": "new_user", "email": "new@example.com"}
+        result = ProfileService.create_profile(
+            data, self.customer_token, self.mock_breadcrumb
+        )
+
+        self.assertEqual(result["name"], "new_user")
+        self.assertEqual(result["customer_id"], ObjectId("507f1f77bcf86cd799439099"))
+        self.assertIn("created", result)
+        self.assertIn("saved", result)
+
+    @patch("api_utils.services.profile_service.Config.get_instance")
+    @patch("api_utils.services.profile_service.MongoIO.get_instance")
+    def test_create_profile_as_admin_allows_custom_customer_id(
+        self, mock_get_mongo, mock_get_config
+    ):
+        """Test admin create does not force token customer_id."""
+        mock_config = MagicMock()
+        mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_CUSTOMER = "customer"
+        mock_config.ROLE_ADMIN = "admin"
+        mock_get_config.return_value = mock_config
+
+        mock_mongo = MagicMock()
+        mock_mongo.create_document.return_value = "507f1f77bcf86cd799439011"
+        mock_get_mongo.return_value = mock_mongo
+
+        data = {
+            "name": "new_user",
+            "customer_id": "507f1f77bcf86cd799439088",
+        }
+        result = ProfileService.create_profile(
+            data, self.admin_token, self.mock_breadcrumb
+        )
+
+        self.assertEqual(result["customer_id"], ObjectId("507f1f77bcf86cd799439088"))
+
+    def test_create_profile_forbidden_for_non_customer(self):
+        """Test create raises HTTPForbidden for non-customer non-admin."""
+        with self.assertRaises(HTTPForbidden):
+            ProfileService.create_profile(
+                {"name": "test"}, self.mentee_token, self.mock_breadcrumb
+            )
+
+    @patch("src.services.profile_service.Config.get_instance")
+    @patch("src.services.profile_service.MongoIO.get_instance")
+    def test_update_profile_as_admin_success(self, mock_get_mongo, mock_get_config):
+        """Test admin can update any profile."""
+        mock_config = MagicMock()
+        mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_ADMIN = "admin"
+        mock_config.ROLE_CUSTOMER = "customer"
+        mock_get_config.return_value = mock_config
+
+        mock_mongo = MagicMock()
+        mock_mongo.get_document.return_value = {
+            "_id": ObjectId("507f1f77bcf86cd799439011"),
+            "name": "target_user",
+            "customer_id": ObjectId("507f1f77bcf86cd799439088"),
+        }
+        mock_get_mongo.return_value = mock_mongo
+
+        result = ProfileService.update_profile(
+            "507f1f77bcf86cd799439011",
+            {"description": "Updated by admin"},
+            self.admin_token,
+            self.mock_breadcrumb,
+        )
+
+        mock_mongo.update_document.assert_called_once()
+        self.assertIsNotNone(result)
+
+    @patch("src.services.profile_service.Config.get_instance")
+    @patch("src.services.profile_service.MongoIO.get_instance")
+    def test_update_profile_own_profile_success(self, mock_get_mongo, mock_get_config):
+        """Test customer can update own profile."""
+        mock_config = MagicMock()
+        mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_ADMIN = "admin"
+        mock_config.ROLE_CUSTOMER = "customer"
+        mock_get_config.return_value = mock_config
+
+        mock_mongo = MagicMock()
+        mock_mongo.get_document.return_value = {
+            "_id": ObjectId("507f1f77bcf86cd799439011"),
+            "name": "customer_user",
+            "customer_id": ObjectId("507f1f77bcf86cd799439099"),
+        }
+        mock_get_mongo.return_value = mock_mongo
+
+        result = ProfileService.update_profile(
+            "507f1f77bcf86cd799439011",
+            {"description": "Self update"},
+            self.customer_token,
+            self.mock_breadcrumb,
+        )
+
+        mock_mongo.update_document.assert_called_once()
+        self.assertIsNotNone(result)
+
+    @patch("src.services.profile_service.Config.get_instance")
+    @patch("src.services.profile_service.MongoIO.get_instance")
+    def test_update_profile_same_customer_success(
+        self, mock_get_mongo, mock_get_config
+    ):
+        """Test customer can update profile with matching customer_id."""
+        mock_config = MagicMock()
+        mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_ADMIN = "admin"
+        mock_config.ROLE_CUSTOMER = "customer"
+        mock_get_config.return_value = mock_config
+
+        mock_mongo = MagicMock()
+        mock_mongo.get_document.return_value = {
+            "_id": ObjectId("507f1f77bcf86cd799439022"),
+            "name": "other_user",
+            "customer_id": ObjectId("507f1f77bcf86cd799439099"),
+        }
+        mock_get_mongo.return_value = mock_mongo
+
+        result = ProfileService.update_profile(
+            "507f1f77bcf86cd799439022",
+            {"description": "Org update"},
+            self.customer_token,
+            self.mock_breadcrumb,
+        )
+
+        mock_mongo.update_document.assert_called_once()
+        self.assertIsNotNone(result)
+
+    @patch("src.services.profile_service.Config.get_instance")
+    @patch("src.services.profile_service.MongoIO.get_instance")
+    def test_update_profile_forbidden_different_customer(
+        self, mock_get_mongo, mock_get_config
+    ):
+        """Test customer cannot update profile of different customer."""
+        mock_config = MagicMock()
+        mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_ADMIN = "admin"
+        mock_config.ROLE_CUSTOMER = "customer"
+        mock_get_config.return_value = mock_config
+
+        mock_mongo = MagicMock()
+        mock_mongo.get_document.return_value = {
+            "_id": ObjectId("507f1f77bcf86cd799439022"),
+            "name": "other_user",
+            "customer_id": ObjectId("507f1f77bcf86cd799439088"),
+        }
+        mock_get_mongo.return_value = mock_mongo
+
+        with self.assertRaises(HTTPForbidden):
+            ProfileService.update_profile(
+                "507f1f77bcf86cd799439022",
+                {"description": "Unauthorized update"},
+                self.customer_token,
+                self.mock_breadcrumb,
+            )
+
+    @patch("src.services.profile_service.Config.get_instance")
+    @patch("src.services.profile_service.MongoIO.get_instance")
+    def test_update_profile_strips_system_fields(self, mock_get_mongo, mock_get_config):
+        """Test update strips _id, created, saved fields and stamps saved."""
+        mock_config = MagicMock()
+        mock_config.PROFILE_COLLECTION_NAME = "Profile"
+        mock_config.ROLE_ADMIN = "admin"
+        mock_config.ROLE_CUSTOMER = "customer"
+        mock_get_config.return_value = mock_config
+
+        mock_mongo = MagicMock()
+        mock_mongo.get_document.return_value = {
+            "_id": ObjectId("507f1f77bcf86cd799439011"),
+            "name": "customer_user",
+            "customer_id": ObjectId("507f1f77bcf86cd799439099"),
+        }
+        mock_get_mongo.return_value = mock_mongo
+
+        update_payload = {
+            "_id": "attempted_id_change",
+            "created": {"fake": "created"},
+            "description": "Clean update",
+        }
+
+        ProfileService.update_profile(
+            "507f1f77bcf86cd799439011",
+            update_payload,
+            self.customer_token,
+            self.mock_breadcrumb,
+        )
+
+        update_call_args = mock_mongo.update_document.call_args[0]
+        updated_data = update_call_args[2]
+        self.assertNotIn("_id", updated_data)
+        self.assertNotIn("created", updated_data)
+        self.assertEqual(updated_data["saved"], self.mock_breadcrumb)
 
 
 if __name__ == "__main__":

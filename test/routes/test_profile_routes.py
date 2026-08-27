@@ -20,7 +20,7 @@ class TestProfileRoutes(unittest.TestCase):
         )
         self.client = self.app.test_client()
 
-        self.mock_token = {"user_id": "test_user", "roles": ["developer"]}
+        self.mock_token = {"user_id": "test_user", "roles": ["developer", "customer"]}
         self.mock_breadcrumb = {
             "at_time": "sometime",
             "correlation_id": "correlation_ID",
@@ -77,6 +77,63 @@ class TestProfileRoutes(unittest.TestCase):
         self.assertEqual(data["name"], "profile1")
         mock_get_profile.assert_called_once_with(
             "123", self.mock_token, self.mock_breadcrumb
+        )
+
+    @patch("src.routes.profile_routes.create_flask_token")
+    @patch("src.routes.profile_routes.create_flask_breadcrumb")
+    @patch("src.routes.profile_routes.ProfileService.create_profile")
+    def test_create_profile_success(
+        self,
+        mock_create_profile,
+        mock_create_breadcrumb,
+        mock_create_token,
+    ):
+        """Test POST /api/profile for successful creation."""
+        mock_create_token.return_value = self.mock_token
+        mock_create_breadcrumb.return_value = self.mock_breadcrumb
+
+        mock_create_profile.return_value = {
+            "_id": "123",
+            "name": "new_profile",
+        }
+
+        response = self.client.post("/api/profile", json={"name": "new_profile"})
+
+        self.assertEqual(response.status_code, 201)
+        data = response.json
+        self.assertEqual(data["name"], "new_profile")
+        mock_create_profile.assert_called_once_with(
+            {"name": "new_profile"}, self.mock_token, self.mock_breadcrumb
+        )
+
+    @patch("src.routes.profile_routes.create_flask_token")
+    @patch("src.routes.profile_routes.create_flask_breadcrumb")
+    @patch("src.routes.profile_routes.ProfileService.update_profile")
+    def test_update_profile_success(
+        self,
+        mock_update_profile,
+        mock_create_breadcrumb,
+        mock_create_token,
+    ):
+        """Test PATCH /api/profile/<id> for successful update."""
+        mock_create_token.return_value = self.mock_token
+        mock_create_breadcrumb.return_value = self.mock_breadcrumb
+
+        mock_update_profile.return_value = {
+            "_id": "123",
+            "name": "updated_profile",
+            "description": "updated",
+        }
+
+        response = self.client.patch(
+            "/api/profile/123", json={"description": "updated"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json
+        self.assertEqual(data["description"], "updated")
+        mock_update_profile.assert_called_once_with(
+            "123", {"description": "updated"}, self.mock_token, self.mock_breadcrumb
         )
 
 
