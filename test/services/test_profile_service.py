@@ -309,8 +309,8 @@ class TestProfileService(unittest.TestCase):
             self.mock_breadcrumb,
         )
 
-        update_call_args = mock_mongo.update_document.call_args[0]
-        updated_data = update_call_args[2]
+        update_call_kwargs = mock_mongo.update_document.call_args.kwargs
+        updated_data = update_call_kwargs["set_data"]
         self.assertNotIn("_id", updated_data)
         self.assertNotIn("created", updated_data)
         self.assertEqual(updated_data["saved"], self.mock_breadcrumb)

@@ -133,10 +133,13 @@ class ProfileService(SharedProfileService):
 
             encode_document(data, ID_PROPERTIES, DATE_PROPERTIES)
 
-            mongo.update_document(config.PROFILE_COLLECTION_NAME, profile_id, data)
+            updated = mongo.update_document(
+                config.PROFILE_COLLECTION_NAME, profile_id, set_data=data
+            )
 
-            updated = mongo.get_document(config.PROFILE_COLLECTION_NAME, profile_id)
-            logger.info(f"Updated profile {profile_id} for user {token.get('user_id')}")
+            logger.info(
+                f"Updated profile {profile_id} for user {token.get('user_id')}"
+            )
             return updated
         except (HTTPForbidden, HTTPNotFound):
             raise
