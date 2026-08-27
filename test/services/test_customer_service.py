@@ -1,6 +1,7 @@
 """
 Unit tests for Customer service (consume-style, read-only).
 """
+
 import unittest
 from unittest.mock import patch, MagicMock
 from bson import ObjectId
@@ -65,9 +66,7 @@ class TestCustomerService(unittest.TestCase):
 
     @patch("src.services.customer_service.Config.get_instance")
     @patch("src.services.customer_service.MongoIO.get_instance")
-    def test_get_customers_with_name_filter(
-        self, mock_get_mongo, mock_get_config
-    ):
+    def test_get_customers_with_name_filter(self, mock_get_mongo, mock_get_config):
         """Test retrieval of documents with name filter."""
         mock_config = MagicMock()
         mock_config.CUSTOMER_COLLECTION_NAME = "Customer"
@@ -100,7 +99,9 @@ class TestCustomerService(unittest.TestCase):
 
     @patch("src.services.customer_service.Config.get_instance")
     @patch("src.services.customer_service.MongoIO.get_instance")
-    def test_get_customers_invalid_limit_too_small(self, mock_get_mongo, mock_get_config):
+    def test_get_customers_invalid_limit_too_small(
+        self, mock_get_mongo, mock_get_config
+    ):
         """Test get_customers raises HTTPBadRequest for limit < 1."""
         mock_config = MagicMock()
         mock_config.CUSTOMER_COLLECTION_NAME = "Customer"
@@ -117,7 +118,9 @@ class TestCustomerService(unittest.TestCase):
 
     @patch("src.services.customer_service.Config.get_instance")
     @patch("src.services.customer_service.MongoIO.get_instance")
-    def test_get_customers_invalid_limit_too_large(self, mock_get_mongo, mock_get_config):
+    def test_get_customers_invalid_limit_too_large(
+        self, mock_get_mongo, mock_get_config
+    ):
         """Test get_customers raises HTTPBadRequest for limit > 100."""
         mock_config = MagicMock()
         mock_config.CUSTOMER_COLLECTION_NAME = "Customer"
@@ -187,7 +190,9 @@ class TestCustomerService(unittest.TestCase):
                 self.mock_breadcrumb,
                 after_id="invalid",
             )
-        self.assertIn("after_id must be a valid MongoDB ObjectId", str(context.exception))
+        self.assertIn(
+            "after_id must be a valid MongoDB ObjectId", str(context.exception)
+        )
 
     @patch("src.services.customer_service.Config.get_instance")
     @patch("src.services.customer_service.MongoIO.get_instance")
@@ -225,16 +230,12 @@ class TestCustomerService(unittest.TestCase):
         mock_get_mongo.return_value = mock_mongo
 
         with self.assertRaises(HTTPNotFound) as context:
-            CustomerService.get_customer(
-                "999", self.mock_token, self.mock_breadcrumb
-            )
+            CustomerService.get_customer("999", self.mock_token, self.mock_breadcrumb)
         self.assertIn("999", str(context.exception))
 
     @patch("src.services.customer_service.Config.get_instance")
     @patch("src.services.customer_service.MongoIO.get_instance")
-    def test_get_customers_handles_exception(
-        self, mock_get_mongo, mock_get_config
-    ):
+    def test_get_customers_handles_exception(self, mock_get_mongo, mock_get_config):
         """Test get_customers handles exceptions properly."""
         mock_config = MagicMock()
         mock_config.CUSTOMER_COLLECTION_NAME = "Customer"
@@ -248,15 +249,11 @@ class TestCustomerService(unittest.TestCase):
         mock_get_mongo.return_value = mock_mongo
 
         with self.assertRaises(HTTPInternalServerError):
-            CustomerService.get_customers(
-                self.mock_token, self.mock_breadcrumb
-            )
+            CustomerService.get_customers(self.mock_token, self.mock_breadcrumb)
 
     @patch("src.services.customer_service.Config.get_instance")
     @patch("src.services.customer_service.MongoIO.get_instance")
-    def test_get_customer_handles_exception(
-        self, mock_get_mongo, mock_get_config
-    ):
+    def test_get_customer_handles_exception(self, mock_get_mongo, mock_get_config):
         """Test get_customer handles exceptions properly."""
         mock_config = MagicMock()
         mock_config.CUSTOMER_COLLECTION_NAME = "Customer"
@@ -267,9 +264,7 @@ class TestCustomerService(unittest.TestCase):
         mock_get_mongo.return_value = mock_mongo
 
         with self.assertRaises(HTTPInternalServerError):
-            CustomerService.get_customer(
-                "123", self.mock_token, self.mock_breadcrumb
-            )
+            CustomerService.get_customer("123", self.mock_token, self.mock_breadcrumb)
 
     def test_check_permission_placeholder(self):
         """Test that _check_permission is a placeholder that allows all operations."""

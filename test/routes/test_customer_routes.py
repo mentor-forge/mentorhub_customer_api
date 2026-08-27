@@ -1,6 +1,7 @@
 """
 Unit tests for Customer routes (consume-style, read-only).
 """
+
 import unittest
 from unittest.mock import patch
 from flask import Flask
@@ -20,7 +21,10 @@ class TestCustomerRoutes(unittest.TestCase):
         self.client = self.app.test_client()
 
         self.mock_token = {"user_id": "test_user", "roles": ["developer"]}
-        self.mock_breadcrumb = {"at_time": "sometime", "correlation_id": "correlation_ID"}
+        self.mock_breadcrumb = {
+            "at_time": "sometime",
+            "correlation_id": "correlation_ID",
+        }
 
     @patch("src.routes.customer_routes.create_flask_token")
     @patch("src.routes.customer_routes.create_flask_breadcrumb")
@@ -141,9 +145,7 @@ class TestCustomerRoutes(unittest.TestCase):
         mock_create_token.return_value = self.mock_token
         mock_create_breadcrumb.return_value = self.mock_breadcrumb
 
-        mock_get_customer.side_effect = HTTPNotFound(
-            "Customer 999 not found"
-        )
+        mock_get_customer.side_effect = HTTPNotFound("Customer 999 not found")
 
         response = self.client.get("/api/customer/999")
 

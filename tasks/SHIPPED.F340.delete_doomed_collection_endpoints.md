@@ -1,6 +1,6 @@
 # F340 – Delete doomed Card, Dashboard, and Subscription endpoints (E0)
 
-**Status:** Pending  
+**Status:** Shipped  
 **Type:** Feature  
 **Depends On:** none  
 **Description:** First task of F-CA14 / E0 in this repo. Remove `/api/card`, `/api/dashboard`, and `/api/subscription` (OpenAPI, routes, services, tests) **before** the 1.0.0 list migration so those collections are not rewritten to offset/size. Keep `/api/customer` and `/api/profile` GET as bases for later journey work. Confirm there are no Product routes (none today). No Stripe, no custom auth, no webhook routes. Stay on `api-utils==0.2.1`.
@@ -85,3 +85,18 @@ Run all commands from this API repository root.
 The agent must not update files outside this list.
 
 ## Execution Notes
+
+- Plan:
+  1. Remove Card, Dashboard, Subscription paths, tags, and component schemas from `docs/openapi.yaml`.
+  2. Remove Card, Dashboard, Subscription blueprint imports, registrations, and log lines from `src/server.py`.
+  3. Delete 15 doomed files across `src/services/`, `src/routes/`, `test/services/`, `test/routes/`, and `test/e2e/`.
+  4. Update `test/test_server.py` to assert Card, Dashboard, Subscription routes and blueprints are absent (404 / assertNotIn / assertFalse).
+  5. Run confirmation grep, unit tests, lint, and build.
+
+- Test Results:
+  - Confirmation grep: 0 references in src, test, docs/openapi.yaml, README.md outside of 404 assertions in test/test_server.py.
+  - Confirmed 0 Product routes exist.
+  - `pipenv run test`: 127 passed, 24 deselected.
+  - `pipenv run lint`: Black check passed with 0 errors across 38 files.
+  - `pipenv run build`: Passed (compiled cleanly).
+  - `pipenv run container`: Docker image `ghcr.io/mentor-forge/mentorhub_customer_api:latest` built successfully.

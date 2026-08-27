@@ -1,6 +1,7 @@
 """
 Unit tests for Profile routes (consume-style, read-only).
 """
+
 import unittest
 from unittest.mock import patch
 from flask import Flask
@@ -20,7 +21,10 @@ class TestProfileRoutes(unittest.TestCase):
         self.client = self.app.test_client()
 
         self.mock_token = {"user_id": "test_user", "roles": ["developer"]}
-        self.mock_breadcrumb = {"at_time": "sometime", "correlation_id": "correlation_ID"}
+        self.mock_breadcrumb = {
+            "at_time": "sometime",
+            "correlation_id": "correlation_ID",
+        }
 
     @patch("src.routes.profile_routes.create_flask_token")
     @patch("src.routes.profile_routes.create_flask_breadcrumb")
@@ -141,9 +145,7 @@ class TestProfileRoutes(unittest.TestCase):
         mock_create_token.return_value = self.mock_token
         mock_create_breadcrumb.return_value = self.mock_breadcrumb
 
-        mock_get_profile.side_effect = HTTPNotFound(
-            "Profile 999 not found"
-        )
+        mock_get_profile.side_effect = HTTPNotFound("Profile 999 not found")
 
         response = self.client.get("/api/profile/999")
 

@@ -3,42 +3,48 @@ Note service for business logic and RBAC.
 
 Handles RBAC checks and MongoDB operations for Note domain.
 """
+
 from api_utils import MongoIO, Config
-from api_utils.flask_utils.exceptions import HTTPBadRequest, HTTPForbidden, HTTPNotFound, HTTPInternalServerError
+from api_utils.flask_utils.exceptions import (
+    HTTPBadRequest,
+    HTTPForbidden,
+    HTTPNotFound,
+    HTTPInternalServerError,
+)
 from api_utils.mongo_utils import execute_infinite_scroll_query
 import logging
 
 logger = logging.getLogger(__name__)
 
 # Allowed sort fields for Note domain
-ALLOWED_SORT_FIELDS = ['name', 'description']
+ALLOWED_SORT_FIELDS = ["name", "description"]
 
 
 class NoteService:
     """
     Service class for Note domain operations.
-    
+
     Handles:
     - RBAC authorization checks (placeholder for future implementation)
     - MongoDB operations via MongoIO singleton
     - Business logic for Note domain (read-only)
     """
-    
+
     @staticmethod
     def _check_permission(token, operation):
         """
         Check if the user has permission to perform an operation.
-        
+
         Args:
             token: Token dictionary with user_id and roles
             operation: The operation being performed (e.g., 'read')
-        
+
         Raises:
             HTTPForbidden: If user doesn't have required permission
-            
+
         Note: This is a placeholder for future RBAC implementation.
         For now, all operations require a valid token (authentication only).
-        
+
         Example RBAC implementation:
             if operation == 'read':
                 # Read requires any authenticated user (no additional check needed)
@@ -48,12 +54,20 @@ class NoteService:
                 pass
         """
         pass
-    
+
     @staticmethod
-    def get_notes(token, breadcrumb, name=None, after_id=None, limit=10, sort_by='name', order='asc'):
+    def get_notes(
+        token,
+        breadcrumb,
+        name=None,
+        after_id=None,
+        limit=10,
+        sort_by="name",
+        order="asc",
+    ):
         """
         Get infinite scroll batch of sorted, filtered note documents.
-        
+
         Args:
             token: Authentication token
             breadcrumb: Audit breadcrumb
@@ -62,7 +76,7 @@ class NoteService:
             limit: Items per batch
             sort_by: Field to sort by
             order: Sort order ('asc' or 'desc')
-        
+
         Returns:
             dict: {
                 'items': [...],
@@ -70,12 +84,12 @@ class NoteService:
                 'has_more': bool,
                 'next_cursor': str|None  # ID of last item, or None if no more
             }
-        
+
         Raises:
             HTTPBadRequest: If invalid parameters provided
         """
         try:
-            NoteService._check_permission(token, 'read')
+            NoteService._check_permission(token, "read")
             mongo = MongoIO.get_instance()
             config = Config.get_instance()
             collection = mongo.get_collection(config.NOTE_COLLECTION_NAME)
@@ -98,32 +112,32 @@ class NoteService:
         except Exception as e:
             logger.error(f"Error retrieving notes: {str(e)}")
             raise HTTPInternalServerError("Failed to retrieve notes")
-    
+
     @staticmethod
     def get_note(note_id, token, breadcrumb):
         """
         Retrieve a specific note document by ID.
-        
+
         Args:
             note_id: The note ID to retrieve
             token: Token dictionary with user_id and roles
             breadcrumb: Breadcrumb dictionary for logging
-            
+
         Returns:
             dict: The note document
-            
+
         Raises:
             HTTPNotFound: If note is not found
         """
         try:
-            NoteService._check_permission(token, 'read')
-            
+            NoteService._check_permission(token, "read")
+
             mongo = MongoIO.get_instance()
             config = Config.get_instance()
             note = mongo.get_document(config.NOTE_COLLECTION_NAME, note_id)
             if note is None:
                 raise HTTPNotFound(f"Note { note_id} not found")
-            
+
             logger.info(f"Retrieved note { note_id} for user {token.get('user_id')}")
             return note
         except HTTPNotFound:
