@@ -1,6 +1,6 @@
 # F341 – OpenAPI component schemas from the live configurator
 
-**Status:** Pending  
+**Status:** Shipped  
 **Type:** Feature  
 **Depends On:** `F340_delete_doomed_collection_endpoints`  
 **Description:** Second F-CA14 task. Replace template `components.schemas` for the collections this API still serves with the latest JSON schemas from the running MongoDB configurator. Do this **after** E0 deletion so Card/Dashboard/Subscription are not refreshed and then thrown away. Docs only — no Python, no pin. List-GET pagination stays cursor-shaped until F342.
@@ -81,3 +81,21 @@ Run all commands from this API repository root.
 The agent must not update files outside this list.
 
 ## Execution Notes
+
+- Plan:
+  1. Query live configurator at `http://localhost:8383/api/configurations/json_schema/<Dictionary>.yaml/latest/` for Customer, Profile, Event, Journey, Rating, and Note.
+  2. Map configurator JSON schemas to OpenAPI 3.0 component schemas:
+     - Use `$ref: '#/components/schemas/Breadcrumb'` for `created` and `saved` breadcrumb objects.
+     - Represent `objectId` as string with pattern `'^[0-9a-fA-F]{24}$'`.
+     - Construct `EventInput` without system-managed fields (`_id`, `created`, `context`).
+  3. Replace schemas in `docs/openapi.yaml`.
+  4. Validate OpenAPI spec with python yaml.safe_load, run unit tests, lint, and build.
+
+- Test Results:
+  - Fetched live configurator JSON schemas for Customer, Profile, Event, Journey, Rating, and Note from `http://localhost:8383`.
+  - Component schemas in `docs/openapi.yaml` accurately mapped to OpenAPI 3.0.3 components.
+  - Spec validation: `python3 -c "import yaml; yaml.safe_load(open('docs/openapi.yaml'))"` passed with 0 errors.
+  - `pipenv run test`: 127 passed, 24 deselected.
+  - `pipenv run lint`: Black check passed with 0 errors.
+  - `pipenv run build`: Passed.
+
