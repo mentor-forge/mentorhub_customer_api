@@ -16,6 +16,7 @@ _DEFAULT_JWT_AUDIENCE = "dev-api"
 _DEFAULT_JWT_ALGORITHM = "HS256"
 
 _E2E_SUBJECT = "adam"
+_E2E_DISPLAY_NAME = "Adam"
 _E2E_ROLES = ("admin",)
 _E2E_PROFILE_ID = "A00000000000000000000001"
 
@@ -39,6 +40,7 @@ def get_auth_token(**claims) -> str:
         "exp": now + 10 * 365 * 24 * 60 * 60,
         "roles": list(_E2E_ROLES),
         "profile_id": _E2E_PROFILE_ID,
+        "display_name": _E2E_DISPLAY_NAME,
     }
     payload.update(claims)
     token = jwt.encode(payload, secret, algorithm=algorithm)

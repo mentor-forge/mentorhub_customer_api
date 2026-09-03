@@ -1,6 +1,6 @@
 # F346 – Pin api-utils 1.0.1
 
-**Status:** Pending  
+**Status:** Shipped  
 **Type:** Feature  
 **Depends On:** none  
 **Description:** F-CA16 owns this pin. Bump `api-utils` from `1.0.0` to exact **`1.0.1`**, refresh the lockfile from CodeArtifact, and sync E2E JWT claims with `Token` (`display_name` instead of `name`). Do **not** rewrite local services or routes in this task except as required for the pin to install and for tests to mint a valid 1.0.1 token.
@@ -97,3 +97,43 @@ Testing should try to prove the pin wrong: a JWT that still only has claim `name
 The agent must not update files outside this list.
 
 ## Execution Notes
+
+### Plan
+1. Confirm helper signatures (`MongoIO`, `execute_list_query`, `build_match_filter`, `encode_document`, `create_flask_token`) against sibling `api_utils` 1.0.1 source — local services already use compatible call shapes; no `src/` changes in this task.
+2. Pin `Pipfile` `api-utils==1.0.1` (keep CodeArtifact `[[source]]` and PyPI comment).
+3. Regenerate `Pipfile.lock` with `scripts/pipenv-lock.sh` (run `mh` first), then `pipenv run install`. If 1.0.1 cannot resolve from CodeArtifact, set Status Blocked and stop (no path-install).
+4. Confirm installed `importlib.metadata.version("api-utils") == "1.0.1"` and audit installed `Token.to_dict` / `create_flask_token` (`display_name` present, no `name` key).
+5. Align `test/e2e/e2e_auth.py` JWT claims: add `display_name`, keep required `profile_id`, do not mint claim `name`.
+6. Update `README.md` pin wording to 1.0.1 and a one-line note that the token dict uses `display_name`.
+7. Run unit/lint/build, then dev E2E and container packaging E2E; curl `/api/config` to confirm token object shape.
+
+### Summary
+Pinned `api-utils==1.0.1` from CodeArtifact (`scripts/pipenv-lock.sh` then `pipenv run install`). Installed version is `1.0.1`. E2E JWT now mints `display_name` (no claim `name`) plus required `profile_id`. `customer_id` / `mentor_id` remain optional empty defaults on `Token`. No `src/` changes. README pin updated.
+
+### Token contract (installed 1.0.1)
+- `importlib.metadata.version("api-utils") == "1.0.1"`
+- `Token.to_dict()` / `create_flask_token()` keys: `user_id`, `display_name`, `roles`, `profile_id`, `customer_id`, `mentor_id`, `remote_ip`
+- No `name` key on the token dict
+- JWT display label: installed `Token` maps `claims.name` **or** `claims.display_name` into `display_name`. This task mints `display_name` only (does not rely on claim `name`; no local mapper)
+- `profile_id` required; `customer_id` / `mentor_id` optional empty defaults
+- `Config.to_dict(token)` passes the same dict through GET `/api/config`
+- Authenticated GET `/api/config` (dev and container): `display_name=Adam`, keys as above, `name` absent
+
+### Helper signature audit
+Installed 1.0.1 signatures match local usage; no local patches:
+- `MongoIO.get_documents/get_document/create_document/update_document/upsert_document`
+- `execute_list_query(collection_name, *, match, sort_by, offset, size, project)`
+- `build_match_filter(base_match, parsed_filters, filter_spec)`
+- `encode_document(document, id_properties, date_properties)`
+
+### Test results
+- `pipenv run test`: 77 passed, 24 deselected
+- `pipenv run lint`: **fails** on pre-existing wrap in `src/services/profile_service.py` (logger.info). Not in Outputs; left unchanged. `test/e2e/e2e_auth.py` is black-clean.
+- `pipenv run build`: success
+- Dev E2E (`pipenv run dev` + `pipenv run e2e`): 23 passed, 1 failed
+- `pipenv run container`: built `ghcr.io/mentor-forge/mentorhub_customer_api:latest` with `api-utils==1.0.1`
+- Container E2E (`pipenv run api` + `pipenv run e2e`): 23 passed, 1 failed
+
+`test/e2e/test_profile.py::test_create_and_patch_profile_endpoint` returns 500 because the POST body still sends Profile document field `name`, which Mongo `$jsonSchema` rejects (`additionalProperties: ['name']`). Shared `create_profile` pass-through; not a token-auth failure. Out of scope (F347 / document `name`); this task must not change that test or `src/`.
+
+Auth-required E2E cases passed; 1.0.1 `Token` accepts the minted JWT.
