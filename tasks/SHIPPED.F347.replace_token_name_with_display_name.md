@@ -1,6 +1,6 @@
 # F347 – Replace token.name with token.display_name
 
-**Status:** Pending  
+**Status:** Shipped  
 **Type:** Feature  
 **Depends On:** `F346_pin_api_utils_1_0_1`  
 **Description:** Remainder of F-CA16. With `api-utils==1.0.1` pinned, replace every **token dict** use of `name` with `display_name` in this API’s source and tests. Do not change collection/document `name` fields, list filters, or OpenAPI schemas for Profile, Customer, Rating, or Journey.
@@ -118,3 +118,48 @@ Run all commands from this API repository root.
 Skip files with no token-dict `name` usage; do not churn them. The agent must not update files outside this list.
 
 ## Execution Notes
+
+### Plan
+1. Confirm `src/` has zero `token.get("name")` / `token["name"]` / `token.name` reads (F346 leftover). Skip all `src/services/*` and `src/routes/*` — no token-dict `name` usage.
+2. Confirm `test/e2e/e2e_auth.py` already mints `display_name` and has no claim `name` (F346). Skip unless a leftover `name` claim appears.
+3. Confirm `README.md` already documents the token dict `display_name` key. Skip.
+4. Update mock token dicts in listed `test/services/` and `test/routes/` files: add `display_name`, omit token `name`. Leave Profile/Customer/Rating/Journey **document** `name` fixtures and list filters unchanged.
+5. In `test/services/test_event_service.py`, assert `create_event` copies token into `context` with `display_name` and without `name`.
+6. Run confirmation greps, unit/lint/build, then dev E2E and packaging E2E + authenticated `GET /api/config`. Do not change Pipfile. Do not edit `mentorhub_api_utils`.
+7. Known leftovers from F346 (out of scope unless token dict uses `name`): pre-existing black wrap in `src/services/profile_service.py`; E2E `test_create_and_patch_profile_endpoint` POST body still sends Profile document field `name`.
+
+### Summary
+`src/` had zero token-dict `name` reads; services/routes and README / `e2e_auth.py` were skipped. Mock tokens in listed service and route tests now include `display_name` and omit token `name`. Event create asserts `context.display_name` and `name` absent. Document/list `name` fixtures left unchanged. Pipfile not touched.
+
+### Confirmation greps
+- `rg 'token\[.name.\]|token\.get\(.name.\)|token\.name' src test` — zero hits
+- `rg '"name":' test/e2e/e2e_auth.py` — zero hits
+- `rg 'display_name' test/e2e/e2e_auth.py` — one hit (`display_name`: Adam)
+
+Remaining `"name"` in `test/services` and `test/routes` (false positives, not token dicts):
+- Customer / Rating / Profile document fixtures and `result["name"]` assertions
+- List filters `filters={"name": "test"}` and `sort_by=[("name", 1), ...]`
+- Profile POST/PATCH JSON bodies (`{"name": "new_profile"}`, create payloads)
+- `test_event_service.py` `assertNotIn("name", result["context"])` — token-context guard, not a token write
+
+### Test results
+- `pipenv run test`: 77 passed, 24 deselected
+- `pipenv run lint`: **fails** on pre-existing wrap in `src/services/profile_service.py` (`logger.info`). No token `name` read; not edited (Outputs: only if token `name` read exists). Test files are black-clean.
+- `pipenv run build`: success
+- Dev E2E (`pipenv run dev` + `pipenv run e2e`): 23 passed, 1 failed
+- `pipenv run container`: built `ghcr.io/mentor-forge/mentorhub_customer_api:latest` with `api-utils==1.0.1`
+- Container E2E (`pipenv run api` + `pipenv run e2e`): 23 passed, 1 failed
+
+`test/e2e/test_profile.py::test_create_and_patch_profile_endpoint` returns 500 because the POST body still sends Profile document field `name`, which Mongo `$jsonSchema` rejects. Document-field issue; out of scope.
+
+Auth-required E2E cases (`*_require_auth`) passed with the admin persona JWT (`display_name`, no claim `name`). Existing tests do not mint least-privileged personas; no token was minted with only `name`.
+
+### GET /api/config token object
+Dev and container authenticated GET `/api/config`:
+- keys: `user_id`, `display_name`, `roles`, `profile_id`, `customer_id`, `mentor_id`, `remote_ip`
+- `display_name=Adam`
+- `name` absent
+
+### Leftovers (out of scope)
+- `pipenv run lint` black wrap in `src/services/profile_service.py`
+- E2E profile create POST document field `name`

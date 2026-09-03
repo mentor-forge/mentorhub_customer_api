@@ -20,17 +20,20 @@ class TestProfileService(unittest.TestCase):
         """Set up the test fixture."""
         self.admin_token = {
             "user_id": "admin_user",
+            "display_name": "Admin User",
             "roles": ["admin"],
             "profile_id": "507f1f77bcf86cd799439011",
         }
         self.customer_token = {
             "user_id": "customer_user",
+            "display_name": "Customer User",
             "roles": ["customer"],
             "customer_id": "507f1f77bcf86cd799439099",
             "profile_id": "507f1f77bcf86cd799439011",
         }
         self.mentee_token = {
             "user_id": "mentee_user",
+            "display_name": "Mentee User",
             "roles": ["mentee"],
             "profile_id": "507f1f77bcf86cd799439011",
         }
