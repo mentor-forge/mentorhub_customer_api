@@ -13,6 +13,13 @@ from api_utils.flask_utils.exceptions import (
     HTTPInternalServerError,
 )
 from api_utils.mongo_utils import encode_document
+from api_utils.mongo_utils.list_query import (
+    DEFAULT_OFFSET,
+    DEFAULT_SIZE,
+    build_match_filter,
+    build_sort_by,
+    execute_list_query,
+)
 from api_utils.services import ProfileService as SharedProfileService
 from api_utils.services.profile_service import (
     ID_PROPERTIES,
@@ -22,6 +29,24 @@ from api_utils.services.profile_service import (
 from api_utils.services.rbac import is_admin
 
 logger = logging.getLogger(__name__)
+
+PROFILE_LIST_FILTERS = {
+    "display_name": {"type": "contains", "field": "display_name"},
+    "email": {"type": "contains", "field": "email"},
+    "description": {"type": "contains", "field": "description"},
+    "status": {"type": "in_list", "field": "status"},
+    "roles": {"type": "in_list", "field": "roles"},
+}
+PROFILE_LIST_ORDER = {
+    "default": {"field": "display_name", "order": "asc"},
+    "allowed": {
+        "display_name": ("asc", "desc"),
+        "email": ("asc", "desc"),
+        "status": ("asc", "desc"),
+        "created.at_time": ("asc", "desc"),
+        "saved.at_time": ("asc", "desc"),
+    },
+}
 
 
 class ProfileService(SharedProfileService):
@@ -65,6 +90,42 @@ class ProfileService(SharedProfileService):
         return super().create_profile(data, token, breadcrumb)
 
     @classmethod
+    def get_profiles(
+        cls,
+        token,
+        breadcrumb,
+        offset=DEFAULT_OFFSET,
+        size=DEFAULT_SIZE,
+        filters=None,
+        sort_by=None,
+    ):
+        """List Profiles using the current ``display_name`` schema."""
+        cls._check_permission(token, "read")
+
+        match = build_match_filter(
+            cls._outbound_match(token), filters or {}, PROFILE_LIST_FILTERS
+        )
+        if sort_by is None:
+            default = PROFILE_LIST_ORDER["default"]
+            sort_by = build_sort_by(
+                default["field"], default["order"], PROFILE_LIST_ORDER
+            )
+
+        config = Config.get_instance()
+        profiles = execute_list_query(
+            config.PROFILE_COLLECTION_NAME,
+            match=match,
+            sort_by=sort_by,
+            offset=offset,
+            size=size,
+        )
+        logger.info(
+            f"Retrieved {len(profiles)} profiles (offset={offset}, size={size}) "
+            f"for user {token.get('user_id')}"
+        )
+        return profiles
+
+    @classmethod
     def update_profile(cls, profile_id, data, token, breadcrumb):
         """
         Update an existing profile document.
@@ -100,19 +161,15 @@ class ProfileService(SharedProfileService):
                 caller_customer_id = (
                     str(token.get("customer_id")) if token.get("customer_id") else None
                 )
-                caller_user_id = token.get("user_id")
-
                 target_profile_id = str(profile.get("_id"))
                 target_customer_id = (
                     str(profile.get("customer_id"))
                     if profile.get("customer_id")
                     else None
                 )
-                target_name = profile.get("name")
-
                 is_own_profile = (
                     caller_profile_id and caller_profile_id == target_profile_id
-                ) or (caller_user_id and caller_user_id == target_name)
+                )
                 is_same_customer = (
                     caller_customer_id
                     and target_customer_id
@@ -137,9 +194,7 @@ class ProfileService(SharedProfileService):
                 config.PROFILE_COLLECTION_NAME, profile_id, set_data=data
             )
 
-            logger.info(
-                f"Updated profile {profile_id} for user {token.get('user_id')}"
-            )
+            logger.info(f"Updated profile {profile_id} for user {token.get('user_id')}")
             return updated
         except (HTTPForbidden, HTTPNotFound):
             raise

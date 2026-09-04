@@ -283,17 +283,10 @@ paths:
             maximum: 100
             default: 20
             example: 20
-        - name: name
+        - name: display_name
           in: query
           required: false
-          description: Optional name filter (supports partial matches, case-insensitive)
-          schema:
-            type: string
-            example: my-Profile
-        - name: full_name
-          in: query
-          required: false
-          description: Optional full name filter (supports partial matches, case-insensitive)
+          description: Optional display name filter (supports partial matches, case-insensitive)
           schema:
             type: string
         - name: email
@@ -327,9 +320,9 @@ paths:
           description: Field to sort by
           schema:
             type: string
-            enum: [name, full_name, email, status, created.at_time, saved.at_time]
-            default: name
-            example: name
+            enum: [display_name, email, status, created.at_time, saved.at_time]
+            default: display_name
+            example: display_name
         - name: order
           in: query
           required: false
@@ -966,7 +959,7 @@ components:
 
     Profile:
       type: object
-      description: Mentor Hub user profile document
+      description: Authoritative person record for display identity, roles, and customer sponsorship on Profile.
       additionalProperties: false
       properties:
         _id:
@@ -975,6 +968,10 @@ components:
           pattern: '^[0-9a-fA-F]{24}$'
         created:
           $ref: '#/components/schemas/Breadcrumb'
+        cognito_sub:
+          type: string
+          description: Cognito user sub (immutable); Path A idempotency key
+          pattern: '^[^\s]{1,40}$'
         customer_id:
           type: string
           description: the customer this profile is associated with
@@ -1040,7 +1037,7 @@ components:
                       type: string
                       description: Te Job Title
                       pattern: '^[^\t\n]{0,255}$'
-        full_name:
+        display_name:
           type: string
           description: Display name from intake (distinct from IdP username)
           pattern: '^[^\t\n]{0,255}$'
@@ -1069,10 +1066,6 @@ components:
           type: string
           description: The _id of this persons Mentor
           pattern: '^[0-9a-fA-F]{24}$'
-        name:
-          type: string
-          description: The IDP Username used in JWT Claims
-          pattern: '^[^\s]{1,40}$'
         roles:
           type: array
           description: The user roles this profile has
@@ -1100,6 +1093,10 @@ components:
       description: Input payload for creating a Profile document
       additionalProperties: false
       properties:
+        cognito_sub:
+          type: string
+          description: Cognito user sub (immutable); Path A idempotency key
+          pattern: '^[^\s]{1,40}$'
         customer_id:
           type: string
           description: the customer this profile is associated with
@@ -1165,7 +1162,7 @@ components:
                       type: string
                       description: Te Job Title
                       pattern: '^[^\t\n]{0,255}$'
-        full_name:
+        display_name:
           type: string
           description: Display name from intake (distinct from IdP username)
           pattern: '^[^\t\n]{0,255}$'
@@ -1194,10 +1191,6 @@ components:
           type: string
           description: The _id of this persons Mentor
           pattern: '^[0-9a-fA-F]{24}$'
-        name:
-          type: string
-          description: The IDP Username used in JWT Claims
-          pattern: '^[^\s]{1,40}$'
         roles:
           type: array
           description: The user roles this profile has
@@ -1223,6 +1216,10 @@ components:
       description: Update payload for modifying an existing Profile document
       additionalProperties: false
       properties:
+        cognito_sub:
+          type: string
+          description: Cognito user sub (immutable); Path A idempotency key
+          pattern: '^[^\s]{1,40}$'
         customer_id:
           type: string
           description: the customer this profile is associated with
@@ -1288,7 +1285,7 @@ components:
                       type: string
                       description: Te Job Title
                       pattern: '^[^\t\n]{0,255}$'
-        full_name:
+        display_name:
           type: string
           description: Display name from intake (distinct from IdP username)
           pattern: '^[^\t\n]{0,255}$'
@@ -1317,10 +1314,6 @@ components:
           type: string
           description: The _id of this persons Mentor
           pattern: '^[0-9a-fA-F]{24}$'
-        name:
-          type: string
-          description: The IDP Username used in JWT Claims
-          pattern: '^[^\s]{1,40}$'
         roles:
           type: array
           description: The user roles this profile has
