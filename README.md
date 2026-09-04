@@ -61,7 +61,7 @@ pipenv run lint
 
 See the [Open API Specifications](./docs/openapi.yaml) for details on the API.
 
-The Customer API is built with `api-utils==1.0.1` and implements the 1.0.0 list GET contract (`offset`/`size` request headers, JSON array responses). The token dict from `create_flask_token()` uses `display_name`.
+The Customer API is built with `api-utils==1.0.2` and implements the 1.0.0 list GET contract (`offset`/`size` request headers, JSON array responses). The token dict from `create_flask_token()` uses `display_name`.
 
 - **Shared GET Factories** (`api_utils.routes.shared_get_routes` + local service subclasses):
   - `/api/profile`: List & Get by ID (`ProfileService`)
