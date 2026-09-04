@@ -20,7 +20,11 @@ class TestProfileRoutes(unittest.TestCase):
         )
         self.client = self.app.test_client()
 
-        self.mock_token = {"user_id": "test_user", "roles": ["developer", "customer"]}
+        self.mock_token = {
+            "user_id": "test_user",
+            "display_name": "Test User",
+            "roles": ["developer", "customer"],
+        }
         self.mock_breadcrumb = {
             "at_time": "sometime",
             "correlation_id": "correlation_ID",
@@ -40,8 +44,8 @@ class TestProfileRoutes(unittest.TestCase):
         mock_create_breadcrumb.return_value = self.mock_breadcrumb
 
         mock_get_profiles.return_value = [
-            {"_id": "123", "name": "profile1"},
-            {"_id": "456", "name": "profile2"},
+            {"_id": "123", "display_name": "Profile One"},
+            {"_id": "456", "display_name": "Profile Two"},
         ]
 
         response = self.client.get("/api/profile")
@@ -67,14 +71,14 @@ class TestProfileRoutes(unittest.TestCase):
 
         mock_get_profile.return_value = {
             "_id": "123",
-            "name": "profile1",
+            "display_name": "Profile One",
         }
 
         response = self.client.get("/api/profile/123")
 
         self.assertEqual(response.status_code, 200)
         data = response.json
-        self.assertEqual(data["name"], "profile1")
+        self.assertEqual(data["display_name"], "Profile One")
         mock_get_profile.assert_called_once_with(
             "123", self.mock_token, self.mock_breadcrumb
         )
@@ -94,16 +98,18 @@ class TestProfileRoutes(unittest.TestCase):
 
         mock_create_profile.return_value = {
             "_id": "123",
-            "name": "new_profile",
+            "display_name": "New Profile",
         }
 
-        response = self.client.post("/api/profile", json={"name": "new_profile"})
+        response = self.client.post(
+            "/api/profile", json={"display_name": "New Profile"}
+        )
 
         self.assertEqual(response.status_code, 201)
         data = response.json
-        self.assertEqual(data["name"], "new_profile")
+        self.assertEqual(data["display_name"], "New Profile")
         mock_create_profile.assert_called_once_with(
-            {"name": "new_profile"}, self.mock_token, self.mock_breadcrumb
+            {"display_name": "New Profile"}, self.mock_token, self.mock_breadcrumb
         )
 
     @patch("src.routes.profile_routes.create_flask_token")
@@ -121,7 +127,7 @@ class TestProfileRoutes(unittest.TestCase):
 
         mock_update_profile.return_value = {
             "_id": "123",
-            "name": "updated_profile",
+            "display_name": "Updated Profile",
             "description": "updated",
         }
 

@@ -19,6 +19,7 @@ class TestEventService(unittest.TestCase):
         """Set up the test fixture."""
         self.mock_token = {
             "user_id": "test_user",
+            "display_name": "Test User",
             "roles": ["developer", "admin"],
             "profile_id": "507f1f77bcf86cd799439011",
         }
@@ -70,6 +71,8 @@ class TestEventService(unittest.TestCase):
         self.assertEqual(result["type"], "login")
         self.assertIn("created", result)
         self.assertIn("_id", result)
+        self.assertEqual(result["context"]["display_name"], "Test User")
+        self.assertNotIn("name", result["context"])
 
     @patch("src.services.event_service.Config.get_instance")
     @patch("src.services.event_service.MongoIO.get_instance")

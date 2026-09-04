@@ -17,7 +17,11 @@ class TestCustomerService(unittest.TestCase):
 
     def setUp(self):
         """Set up the test fixture."""
-        self.mock_token = {"user_id": "test_user", "roles": ["developer"]}
+        self.mock_token = {
+            "user_id": "test_user",
+            "display_name": "Test User",
+            "roles": ["developer"],
+        }
         self.mock_breadcrumb = {
             "at_time": "2024-01-01T00:00:00Z",
             "by_user": "test_user",

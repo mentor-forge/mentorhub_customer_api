@@ -19,6 +19,7 @@ class TestNoteService(unittest.TestCase):
         """Set up the test fixture."""
         self.mock_token = {
             "user_id": "test_user",
+            "display_name": "Test User",
             "roles": ["developer", "admin"],
             "profile_id": "507f1f77bcf86cd799439011",
         }

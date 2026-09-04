@@ -20,17 +20,20 @@ class TestProfileService(unittest.TestCase):
         """Set up the test fixture."""
         self.admin_token = {
             "user_id": "admin_user",
+            "display_name": "Admin User",
             "roles": ["admin"],
             "profile_id": "507f1f77bcf86cd799439011",
         }
         self.customer_token = {
             "user_id": "customer_user",
+            "display_name": "Customer User",
             "roles": ["customer"],
             "customer_id": "507f1f77bcf86cd799439099",
             "profile_id": "507f1f77bcf86cd799439011",
         }
         self.mentee_token = {
             "user_id": "mentee_user",
+            "display_name": "Mentee User",
             "roles": ["mentee"],
             "profile_id": "507f1f77bcf86cd799439011",
         }
@@ -41,8 +44,8 @@ class TestProfileService(unittest.TestCase):
             "correlation_id": "test-correlation-id",
         }
 
-    @patch("api_utils.services.profile_service.execute_list_query")
-    @patch("api_utils.services.profile_service.Config.get_instance")
+    @patch("src.services.profile_service.execute_list_query")
+    @patch("src.services.profile_service.Config.get_instance")
     def test_get_profiles_success(self, mock_get_config, mock_execute_list_query):
         """Test successful retrieval of profiles."""
         mock_config = MagicMock()
@@ -51,8 +54,14 @@ class TestProfileService(unittest.TestCase):
         mock_get_config.return_value = mock_config
 
         mock_docs = [
-            {"_id": ObjectId("507f1f77bcf86cd799439011"), "name": "profile1"},
-            {"_id": ObjectId("507f1f77bcf86cd799439012"), "name": "profile2"},
+            {
+                "_id": ObjectId("507f1f77bcf86cd799439011"),
+                "display_name": "Profile One",
+            },
+            {
+                "_id": ObjectId("507f1f77bcf86cd799439012"),
+                "display_name": "Profile Two",
+            },
         ]
         mock_execute_list_query.return_value = mock_docs
 
@@ -76,7 +85,7 @@ class TestProfileService(unittest.TestCase):
         mock_mongo = MagicMock()
         mock_mongo.get_document.return_value = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
-            "name": "profile1",
+            "display_name": "Profile One",
             "status": "active",
         }
         mock_get_mongo.return_value = mock_mongo
@@ -85,7 +94,7 @@ class TestProfileService(unittest.TestCase):
             "507f1f77bcf86cd799439011", self.admin_token, self.mock_breadcrumb
         )
 
-        self.assertEqual(result["name"], "profile1")
+        self.assertEqual(result["display_name"], "Profile One")
 
     @patch("api_utils.services.profile_service.Config.get_instance")
     @patch("api_utils.services.profile_service.MongoIO.get_instance")
@@ -121,12 +130,12 @@ class TestProfileService(unittest.TestCase):
         mock_mongo.create_document.return_value = "507f1f77bcf86cd799439011"
         mock_get_mongo.return_value = mock_mongo
 
-        data = {"name": "new_user", "email": "new@example.com"}
+        data = {"display_name": "New User", "email": "new@example.com"}
         result = ProfileService.create_profile(
             data, self.customer_token, self.mock_breadcrumb
         )
 
-        self.assertEqual(result["name"], "new_user")
+        self.assertEqual(result["display_name"], "New User")
         self.assertEqual(result["customer_id"], ObjectId("507f1f77bcf86cd799439099"))
         self.assertIn("created", result)
         self.assertIn("saved", result)
@@ -148,7 +157,7 @@ class TestProfileService(unittest.TestCase):
         mock_get_mongo.return_value = mock_mongo
 
         data = {
-            "name": "new_user",
+            "display_name": "New User",
             "customer_id": "507f1f77bcf86cd799439088",
         }
         result = ProfileService.create_profile(
@@ -161,7 +170,7 @@ class TestProfileService(unittest.TestCase):
         """Test create raises HTTPForbidden for non-customer non-admin."""
         with self.assertRaises(HTTPForbidden):
             ProfileService.create_profile(
-                {"name": "test"}, self.mentee_token, self.mock_breadcrumb
+                {"display_name": "Test"}, self.mentee_token, self.mock_breadcrumb
             )
 
     @patch("src.services.profile_service.Config.get_instance")
@@ -177,7 +186,7 @@ class TestProfileService(unittest.TestCase):
         mock_mongo = MagicMock()
         mock_mongo.get_document.return_value = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
-            "name": "target_user",
+            "display_name": "Target User",
             "customer_id": ObjectId("507f1f77bcf86cd799439088"),
         }
         mock_get_mongo.return_value = mock_mongo
@@ -205,7 +214,7 @@ class TestProfileService(unittest.TestCase):
         mock_mongo = MagicMock()
         mock_mongo.get_document.return_value = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
-            "name": "customer_user",
+            "display_name": "Customer User",
             "customer_id": ObjectId("507f1f77bcf86cd799439099"),
         }
         mock_get_mongo.return_value = mock_mongo
@@ -235,7 +244,7 @@ class TestProfileService(unittest.TestCase):
         mock_mongo = MagicMock()
         mock_mongo.get_document.return_value = {
             "_id": ObjectId("507f1f77bcf86cd799439022"),
-            "name": "other_user",
+            "display_name": "Other User",
             "customer_id": ObjectId("507f1f77bcf86cd799439099"),
         }
         mock_get_mongo.return_value = mock_mongo
@@ -265,7 +274,7 @@ class TestProfileService(unittest.TestCase):
         mock_mongo = MagicMock()
         mock_mongo.get_document.return_value = {
             "_id": ObjectId("507f1f77bcf86cd799439022"),
-            "name": "other_user",
+            "display_name": "Other User",
             "customer_id": ObjectId("507f1f77bcf86cd799439088"),
         }
         mock_get_mongo.return_value = mock_mongo
@@ -291,7 +300,7 @@ class TestProfileService(unittest.TestCase):
         mock_mongo = MagicMock()
         mock_mongo.get_document.return_value = {
             "_id": ObjectId("507f1f77bcf86cd799439011"),
-            "name": "customer_user",
+            "display_name": "Customer User",
             "customer_id": ObjectId("507f1f77bcf86cd799439099"),
         }
         mock_get_mongo.return_value = mock_mongo

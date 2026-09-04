@@ -39,11 +39,13 @@ def test_get_profiles_endpoint():
 
 
 @pytest.mark.e2e
-def test_get_profiles_with_name_filter():
-    """Test GET /api/profile with name query parameter."""
+def test_get_profiles_with_display_name_filter():
+    """Test GET /api/profile with display_name query parameter."""
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
-    response = requests.get(f"{BASE_URL}/api/profile?name=test", headers=headers)
+    response = requests.get(
+        f"{BASE_URL}/api/profile?display_name=Test", headers=headers
+    )
     assert response.status_code == 200, _err(response, 200)
 
     response_data = response.json()
@@ -56,7 +58,7 @@ def test_create_and_patch_profile_endpoint():
     token = get_auth_token()
     headers = {"Authorization": f"Bearer {token}"}
     create_data = {
-        "name": f"e2e-user-{int(time.time())}",
+        "display_name": f"E2E User {int(time.time())}",
         "email": "e2e@example.com",
         "description": "Initial description",
     }
