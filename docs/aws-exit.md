@@ -24,3 +24,18 @@ Customer API starts with shared Config and MongoIO. Route handlers obtain normal
 The tracked runtime source and tests contain no Cognito or direct AWS SDK references. Developer Edition Compose historically supplied Cognito variables to Customer API, but this repo has no consumers of those settings. Provider-specific integration belongs in its infrastructure repository. This migration needs no identity adapter, data rewrite, or OpenAPI changes.
 
 Customer API acceptance covers a clean locked install, its tests, and its packaged runtime against local backing services. Production infrastructure and Customer SPA adoption can be tracked independently.
+
+## GitHub Actions and acceptance
+
+Pull requests into main run lock verification, a locked development install,
+lint, unit tests, Python compilation, and a local container build. The workflow
+has read-only repository access and disables credential persistence at checkout.
+The separate push-to-main workflow uses read-only repository access and package
+write access to publish the existing Linux amd64 and arm64 image to GHCR.
+
+Local acceptance on November 21, 2026 passed lock verification, a clean
+dependency sync, lint, all 77 unit tests, compilation, and a credential-free
+container build. All 24 end-to-end cases passed against that image with separate
+MongoDB and seeded Developer Edition data on an isolated Docker network. The
+suite exercised local signed JWTs, missing-token rejection, and scoped API
+responses. GitHub Actions evidence is collected after a pull request is opened.
