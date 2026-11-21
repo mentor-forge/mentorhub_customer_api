@@ -1,6 +1,6 @@
 # F350 – Remove AWS auth from API Docker builds
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -76,4 +76,7 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+- Replaced the authenticated Docker index with a hash-enforced export of the committed Pipenv lock. Preserved the existing separate public Gunicorn install, multi-stage compile, default GHCR tag, runtime command, and port. Local builds may override the tag with `CUSTOMER_API_IMAGE`.
+- Built the ARM64 image using `pipenv run container` with AWS and GitHub credential variables unset. Verified that the requirements export carries the full wheel URL and SHA-256 and that the installed distribution reports the expected origin, checksum, and API Utils version 1.0.5.
+- Verified the Explorer, OpenAPI, metrics, and authenticated config endpoints. All 24 existing E2E tests, including the unauthenticated checks, passed against the packaged image on a dynamic loopback port with disposable seeded MongoDB. The isolated harness substituted for `pipenv run api`, which would stop the running Developer Edition stack, and used the same pytest E2E selection and local JWT fixture.
+- Shell syntax and whitespace checks passed. The build retained the existing Docker shell-form command warning, and the local test JWT fixture emitted its existing key-length warning. Removed the disposable test containers and network. No image was published.

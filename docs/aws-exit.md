@@ -13,6 +13,10 @@ The migration uses the public [API Utils 1.0.5 wheel](https://github.com/mentor-
 | `.github/workflows/docker-push.yml` | AWS OIDC role, CodeArtifact index, and build argument | F351 removes AWS auth, adds read-only PR checks, and retains GHCR publishing on main. |
 | `README.md`, `tasks/_PLANNING.md` | Developer setup still points to CodeArtifact | F352 documents the new setup and records independent Customer API acceptance. |
 
+## Container build
+
+Run `pipenv run container` to build the local Customer API image. The build exports the committed runtime lock with hashes and installs its dependencies from public PyPI and the exact API Utils release wheel. It needs no AWS or GitHub credentials. The default image tag remains `ghcr.io/mentor-forge/mentorhub_customer_api:latest`. Set `CUSTOMER_API_IMAGE` to use a separate local tag for isolated testing.
+
 ## Runtime contracts
 
 Customer API starts with shared Config and MongoIO. Route handlers obtain normalized bearer claims through `create_flask_token()`. API Utils 1.0.5 retains the token dictionary's `user_id`, `display_name`, `roles`, `profile_id`, and `customer_id` contract. The Customer persona fixture already uses `display_name`. Preserve scoped profile and customer lookup, JWT and role enforcement, and MongoIO-backed service calls. Verify those contracts with the actual pinned wheel in subsequent tasks.
