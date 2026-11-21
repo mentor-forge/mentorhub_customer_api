@@ -1,6 +1,6 @@
 # F348 – Audit AWS coupling and release prerequisites
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -73,4 +73,6 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+- Added the repo-local audit in `docs/aws-exit.md`. Verified the current CodeArtifact pin, historical pin tasks, tracked build and workflow paths, and runtime contracts.
+- Downloaded the public API Utils 1.0.5 wheel without authentication and verified it against the published SHA-256 manifest.
+- Source search found no direct AWS or Cognito calls in tracked runtime and tests. No services were started or runtime files changed.
