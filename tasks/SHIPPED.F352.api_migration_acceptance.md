@@ -1,6 +1,6 @@
 # F352 – Finalize API migration documentation and runtime acceptance
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -74,4 +74,6 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+Updated setup and rollback guidance. Verified a clean locked install, lint, 77 unit tests, compilation, an AWS-free image build, and all 24 packaged end-to-end tests using isolated MongoDB and seeded data. Hosted PR validation passed. Maintainer review and post-merge publishing are pending.
+
+[Customer API hosted validation](https://github.com/mentor-forge/mentorhub_customer_api/actions/runs/44927850533).

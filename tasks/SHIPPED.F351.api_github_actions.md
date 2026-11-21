@@ -1,6 +1,6 @@
 # F351 – Update API GitHub Actions for AWS-free validation and GHCR publishing
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -75,4 +75,6 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+Removed AWS authentication from publishing and added a read-only PR workflow. Hosted Validate Customer API passed on the pull request after the locked install, lint, 77 unit tests, compilation, and the container build.
+
+[Customer API hosted validation](https://github.com/mentor-forge/mentorhub_customer_api/actions/runs/44927850533).
