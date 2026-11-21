@@ -2,9 +2,9 @@
 
 ## Package delivery
 
-The current Pipfile and lock pin API Utils 1.0.4 from CodeArtifact. The README's 1.0.3 reference is stale. The earlier pin task, F346, shipped for 1.0.1 and is superseded by the current pin. There are no unfinished pin tasks.
+Before this migration the Pipfile and lock pinned API Utils 1.0.4 from CodeArtifact. The README's 1.0.3 reference is stale. The earlier pin task, F346, shipped for 1.0.1 and is superseded by the current pin. There are no unfinished pin tasks.
 
-The migration uses the public [API Utils 1.0.5 wheel](https://github.com/mentor-forge/mentorhub_api_utils/releases/download/v1.0.5/api_utils-1.0.5-py3-none-any.whl). An unauthenticated download matched the published SHA-256 `79de3829e2baa294497e08925908645bcea53cdf497d02b6bed71322a503d952`. Pin the exact wheel URL and digest, resolve third-party packages from public PyPI, and avoid the unrelated package named `api-utils` on PyPI. For future rollbacks, restore the verified GitHub-hosted wheel pin and its matching lockfile together. The rollback floor is 1.0.5.
+The migration uses the public [API Utils 1.0.5 wheel](https://github.com/mentor-forge/mentorhub_api_utils/releases/download/v1.0.5/api_utils-1.0.5-py3-none-any.whl). An unauthenticated download matched the published SHA-256 `79de3829e2baa294497e08925908645bcea53cdf497d02b6bed71322a503d952`. The Pipfile and lock now pin the exact wheel URL and digest and resolve third-party dependencies from public PyPI. The public PyPI package named `api-utils` is unrelated. Run `pipenv run install` to sync the development environment from the lock, and `pipenv lock` when intentionally updating it. For future rollbacks, restore the verified GitHub-hosted wheel pin and its matching lockfile together. The rollback floor is 1.0.5.
 
 | Surface | Current dependency | Migration |
 | --- | --- | --- |

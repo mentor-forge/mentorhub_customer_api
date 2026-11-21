@@ -1,6 +1,6 @@
 # F349 – Migrate API dependency source and locking to a Release wheel
 
-**Status**: Pending
+**Status**: Shipped
 
 **Type**: Feature
 
@@ -82,4 +82,7 @@ AWS inventory, secure backup/restore evidence and separately approved decommissi
 
 ## Execution Notes
 
-Reserved for the execution agent. No implementation, tests, service changes or publication have been performed.
+- Pinned the verified API Utils 1.0.5 release wheel by exact URL and SHA-256 fragment. Locked third-party dependencies from public PyPI.
+- Replaced the AWS-only install wrapper with a native `pipenv sync --dev` alias under the existing `pipenv run install` entry point. Removed the obsolete lock wrapper and retained native `pipenv lock`.
+- Checked shared Config, MongoIO, and token imports. The existing E2E fixture already provides `display_name` and the profile claim required by its Customer persona, so it needed no edit.
+- Regenerated and verified the lock, checked the exported wheel digest, and installed in a fresh Python 3.12 environment without AWS credentials. The installed distribution metadata matched the exact release URL, SHA-256, and version. All 77 unit tests, Black lint, and compilation passed. Packaged E2E remains for the AWS-free container task.
