@@ -6,8 +6,13 @@
 
 ## Developer Commands
 
+Install from the committed Pipenv lock. API Utils is pinned to an exact public
+GitHub release wheel URL and SHA-256. Other Python dependencies come from PyPI.
+Docker builds use the same locked runtime dependencies without AWS credentials.
+Pull requests run read-only validation, and pushes to main publish to GHCR.
+
 ```bash
-## Install dependencies (run `mh` first for CodeArtifact auth)
+## Install locked dependencies
 pipenv run install
 
 # start backing db container 
